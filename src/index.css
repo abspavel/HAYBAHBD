@@ -1,0 +1,114 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --brand-gold: #D4AF37;
+    --brand-gold-light: #E8CE7A;
+    --brand-gold-dark: #B8962E;
+    --brand-green-deep: #06201A;
+    --brand-green-surface: #0B2B22;
+    --brand-green-dark: #041511;
+    --cards-visible: 2;
+  }
+
+  @media (min-width: 640px) {
+    :root {
+      --cards-visible: 3;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    :root {
+      --cards-visible: 4;
+    }
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    background-color: #F8F9FA;
+    color: #06201A;
+    -webkit-tap-highlight-color: transparent;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+}
+
+.font-brand {
+  font-family: 'Cinzel', serif;
+  letter-spacing: 0.15em;
+}
+
+.font-arabic {
+  font-family: 'Amiri', serif;
+}
+
+/* Scrolling marquee animation */
+@keyframes marquee {
+  0% { transform: translateX(0%); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+  display: flex;
+  width: max-content;
+  animation: marquee 22s linear infinite;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+/* Smooth custom scrollbars */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Gold shimmer effect */
+.gold-shimmer {
+  background: linear-gradient(135deg, #D4AF37 0%, #FFF3B0 50%, #B8962E 100%);
+}
+
+.gold-border-glow {
+  box-shadow: 0 0 15px rgba(212, 175, 55, 0.45);
+}
+
+/* Category subtle elegant motion & soft warm glow */
+@keyframes gentleCategoryFloat {
+  0%, 100% {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 14px rgba(212, 175, 55, 0.28);
+  }
+  50% {
+    transform: translateY(-4px);
+    box-shadow: 0 6px 20px rgba(212, 175, 55, 0.42);
+  }
+}
+
+@keyframes softGoldGlow {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(212, 175, 55, 0.35), 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+  50% {
+    box-shadow: 0 0 18px rgba(212, 175, 55, 0.6), 0 6px 16px rgba(0, 0, 0, 0.12);
+  }
+}
+
+.animate-category-gentle {
+  animation: gentleCategoryFloat 1.8s ease-in-out infinite;
+}
+
+.animate-soft-gold-glow {
+  animation: softGoldGlow 1.8s ease-in-out infinite;
+}

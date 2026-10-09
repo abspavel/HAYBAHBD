@@ -1,0 +1,6 @@
+{
+  "name": "HAYBAH - Premium Streetwear & Contemporary Apparel",
+  "description": "Exclusive collection of premium hoodies, drop shoulders, sweatshirts, and streetwear by HAYBAH. Fast delivery across Bangladesh.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
