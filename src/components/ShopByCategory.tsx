@@ -50,8 +50,8 @@ export const ShopByCategory: React.FC = () => {
         </div>
       </div>
 
-      {/* 2. Grid: 4 columns x 3 rows with even more compact cards and prominent golden borders */}
-      <div className="grid grid-cols-4 gap-x-3.5 xs:gap-x-4 sm:gap-x-6 md:gap-x-8 gap-y-3.5 sm:gap-y-5 md:gap-y-6 items-start justify-items-center">
+      {/* 2. Grid: 4 columns x 3 rows with spacious vertical gap between rows */}
+      <div className="grid grid-cols-4 gap-x-3.5 xs:gap-x-4 sm:gap-x-6 md:gap-x-8 gap-y-6 xs:gap-y-7 sm:gap-y-8 md:gap-y-10 items-start justify-items-center">
         {displayedCategories.map((cat) => {
           const isActive = activeId === cat.id;
           const isLoaded = loadedImages[cat.id];
