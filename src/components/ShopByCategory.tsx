@@ -50,8 +50,8 @@ export const ShopByCategory: React.FC = () => {
         </div>
       </div>
 
-      {/* 2. Grid: 4 columns x 3 rows with even smaller compact cards and spacious gaps */}
-      <div className="grid grid-cols-4 gap-x-4 xs:gap-x-5 sm:gap-x-7 md:gap-x-9 gap-y-4 sm:gap-y-6 md:gap-y-7 items-start justify-items-center">
+      {/* 2. Grid: 4 columns x 3 rows with even more compact cards and prominent golden borders */}
+      <div className="grid grid-cols-4 gap-x-3.5 xs:gap-x-4 sm:gap-x-6 md:gap-x-8 gap-y-3.5 sm:gap-y-5 md:gap-y-6 items-start justify-items-center">
         {displayedCategories.map((cat) => {
           const isActive = activeId === cat.id;
           const isLoaded = loadedImages[cat.id];
@@ -60,18 +60,18 @@ export const ShopByCategory: React.FC = () => {
             <div
               key={cat.id}
               onClick={() => handleCategoryClick(cat.slug, cat.id)}
-              className="group flex flex-col items-center cursor-pointer select-none w-full max-w-[68px] xs:max-w-[78px] sm:max-w-[95px] md:max-w-[108px]"
+              className="group flex flex-col items-center cursor-pointer select-none w-full max-w-[60px] xs:max-w-[70px] sm:max-w-[84px] md:max-w-[96px]"
             >
               {/* 
                 Card Frame:
                 - Compact 3/4 aspect ratio portrait
-                - Golden border ONLY on Left and Right (ডান ও বাম পাশে গোল্ডেন বর্ডার, উপরে নিচে বর্ডার নেই)
+                - Thicker, radiant pure Metallic Gold border ONLY on Left and Right (খাঁটি উজ্জ্বল গোল্ডেন বর্ডার)
                 - Rounded corners
                 - Clean studio image inside (কোনো টেক্সট/লেখা ছবির উপর থাকবে না)
               */}
               <div
-                className={`relative w-full aspect-[3/4] rounded-[8px] sm:rounded-[12px] bg-white border-y-0 border-x-[3px] sm:border-x-[3.5px] border-[#D4AF37] shadow-[0_3px_10px_rgba(0,0,0,0.06)] overflow-hidden transition-all duration-200 ease-out transform group-hover:-translate-y-1 group-hover:scale-[1.03] group-hover:border-[#E8CE7A] group-hover:shadow-[0_6px_18px_rgba(212,175,55,0.3)] active:scale-[0.96] active:duration-100 ${
-                  isActive ? 'scale-[1.03] -translate-y-1 ring-2 ring-[#D4AF37]' : ''
+                className={`relative w-full aspect-[3/4] rounded-[7px] sm:rounded-[10px] bg-white border-y-0 border-x-[3.5px] xs:border-x-[4px] sm:border-x-[4.5px] border-[#D4AF37] shadow-[0_3px_12px_rgba(212,175,55,0.25)] overflow-hidden transition-all duration-200 ease-out transform group-hover:-translate-y-1 group-hover:scale-[1.04] group-hover:border-[#E8CE7A] group-hover:shadow-[0_6px_20px_rgba(212,175,55,0.5)] active:scale-[0.95] active:duration-100 ${
+                  isActive ? 'scale-[1.04] -translate-y-1 ring-2 ring-[#D4AF37]' : ''
                 }`}
               >
                 {/* Inner Image Container (No text overlay) */}
@@ -100,8 +100,8 @@ export const ShopByCategory: React.FC = () => {
               </div>
 
               {/* 3. Category Name Text Below Card (Centered, dark, bold) */}
-              <div className="mt-1 sm:mt-1.5 w-full min-h-[1.75rem] sm:min-h-[2.2rem] flex items-start justify-center text-center">
-                <p className="text-[9px] xs:text-[10px] sm:text-[11.5px] font-bold text-[#06201A] leading-tight break-words group-hover:text-[#D4AF37] transition-colors">
+              <div className="mt-1 w-full min-h-[1.5rem] sm:min-h-[1.9rem] flex items-start justify-center text-center">
+                <p className="text-[8.5px] xs:text-[9.5px] sm:text-[10.5px] md:text-[11px] font-bold text-[#06201A] leading-tight break-words group-hover:text-[#C5A028] transition-colors">
                   {cat.name}
                 </p>
               </div>
