@@ -281,26 +281,32 @@ export const Footer: React.FC = () => {
         {/* Copyright & Creator Attribution Line */}
         <div className="pt-4 border-t border-gray-800/80 text-center text-xs text-gray-400 space-y-2">
           <p>© 2026 HAYBAH. All Rights Reserved.</p>
-          <p className="text-[11px] text-gray-400/90 font-medium">
-            Designed & Developed by{' '}
-            <a
-              href="https://www.webtrixit.site"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[#D4AF37] hover:text-[#FFF3B0] font-bold underline decoration-[#D4AF37]/50 hover:decoration-[#FFF3B0] transition-colors"
-            >
-              Webtrix IT Solution
-            </a>
-            {' '}and{' '}
-            <a
-              href="https://www.paveljoy.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[#D4AF37] hover:text-[#FFF3B0] font-bold underline decoration-[#D4AF37]/50 hover:decoration-[#FFF3B0] transition-colors"
-            >
-              PAVEL AHMED JOY
-            </a>
-          </p>
+          {/* Design & Development Attribution */}
+          <div className="pt-1 flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs text-gray-400">
+            <span className="text-gray-400 tracking-wide font-normal">Crafted with precision —</span>
+            <span className="text-gray-300 font-medium tracking-wide">Design &amp; Developed by</span>
+            <span className="inline-flex items-center gap-1.5 flex-wrap justify-center">
+              <a
+                href="https://www.webtrixit.site"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group relative inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white/5 hover:bg-[#D4AF37]/15 border border-[#D4AF37]/40 hover:border-[#D4AF37] text-[#E8CE7A] hover:text-[#FFF3B0] font-semibold tracking-wider transition-all duration-200 shadow-xs"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-[#D4AF37] group-hover:scale-125 transition-transform"></span>
+                <span>Webtrix IT Solution</span>
+              </a>
+              <span className="text-gray-500 font-light">&amp;</span>
+              <a
+                href="https://www.paveljoy.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group relative inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white/5 hover:bg-[#D4AF37]/15 border border-[#D4AF37]/40 hover:border-[#D4AF37] text-[#E8CE7A] hover:text-[#FFF3B0] font-semibold tracking-wider uppercase transition-all duration-200 shadow-xs"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-[#D4AF37] group-hover:scale-125 transition-transform"></span>
+                <span>Pavel Ahmed Joy</span>
+              </a>
+            </span>
+          </div>
 
           {/* Admin Login Link (Small & Discreet) */}
           <div className="pt-2 flex items-center justify-center gap-2">

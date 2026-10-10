@@ -33,7 +33,9 @@ export const ThankYouView: React.FC = () => {
   const order = activeOrderConfirmation;
 
   const handleCopyId = (id: string) => {
-    navigator.clipboard.writeText(id);
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(id).catch(() => {});
+    }
     setCopiedId(true);
     showToast('অর্ডার নম্বর কপি করা হয়েছে!', 'success');
     setTimeout(() => setCopiedId(false), 2200);

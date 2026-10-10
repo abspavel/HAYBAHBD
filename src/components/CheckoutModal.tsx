@@ -108,7 +108,9 @@ export const CheckoutModal: React.FC = () => {
   };
 
   const copyOrderId = (id: string) => {
-    navigator.clipboard.writeText(id);
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(id).catch(() => {});
+    }
     setCopiedId(true);
     setTimeout(() => setCopiedId(false), 2000);
   };
@@ -332,7 +334,58 @@ export const CheckoutModal: React.FC = () => {
               />
             </div>
 
-            {/* 3. Delivery Zone Selection (80 / 120 Tk) */}
+            {/* 3. District/City & Thana */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                  District / City *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={district}
+                  onChange={(e) => setDistrict(e.target.value)}
+                  className="w-full bg-white text-xs sm:text-sm text-[#06201A] px-3.5 py-2.5 rounded-xl border border-gray-300 focus:border-[#D4AF37] focus:ring-2 focus:ring-[#D4AF37]/20 focus:outline-hidden transition-all shadow-2xs"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                  Thana / Upazila *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={thana}
+                  onChange={(e) => setThana(e.target.value)}
+                  className="w-full bg-white text-xs sm:text-sm text-[#06201A] px-3.5 py-2.5 rounded-xl border border-gray-300 focus:border-[#D4AF37] focus:ring-2 focus:ring-[#D4AF37]/20 focus:outline-hidden transition-all shadow-2xs"
+                />
+              </div>
+            </div>
+
+            {/* 4. Full Address */}
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                Full Address *
+              </label>
+              <textarea
+                required
+                rows={2}
+                value={fullAddress}
+                onChange={(e) => setFullAddress(e.target.value)}
+                className="w-full bg-white text-xs sm:text-sm text-[#06201A] px-3.5 py-2.5 rounded-xl border border-gray-300 focus:border-[#D4AF37] focus:ring-2 focus:ring-[#D4AF37]/20 focus:outline-hidden transition-all shadow-2xs"
+              />
+            </div>
+
+            {/* Pure Cash on Delivery Note (Minimal & Clean) */}
+            <div className="p-3 bg-[#FAF7EC]/80 rounded-2xl border border-[#D4AF37]/30 flex items-center gap-2.5 text-xs text-[#06201A]">
+              <Banknote className="w-4 h-4 text-[#AA820A] shrink-0" />
+              <span>
+                <strong>Cash on Delivery:</strong> Pay full amount in cash after receiving and verifying your parcel.
+              </span>
+            </div>
+
+            {/* 5. Delivery Area Selection (Inside Dhaka / Outside Dhaka) - Placed at the very bottom */}
             <div>
               <label className="block text-xs font-semibold text-gray-700 mb-1.5">
                 Delivery Area *
@@ -394,57 +447,6 @@ export const CheckoutModal: React.FC = () => {
                   </div>
                 </div>
               </div>
-            </div>
-
-            {/* 4. District/City & Thana */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                  District / City *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={district}
-                  onChange={(e) => setDistrict(e.target.value)}
-                  className="w-full bg-white text-xs sm:text-sm text-[#06201A] px-3.5 py-2.5 rounded-xl border border-gray-300 focus:border-[#D4AF37] focus:ring-2 focus:ring-[#D4AF37]/20 focus:outline-hidden transition-all shadow-2xs"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                  Thana / Upazila *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={thana}
-                  onChange={(e) => setThana(e.target.value)}
-                  className="w-full bg-white text-xs sm:text-sm text-[#06201A] px-3.5 py-2.5 rounded-xl border border-gray-300 focus:border-[#D4AF37] focus:ring-2 focus:ring-[#D4AF37]/20 focus:outline-hidden transition-all shadow-2xs"
-                />
-              </div>
-            </div>
-
-            {/* 5. Full Address */}
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                Full Address *
-              </label>
-              <textarea
-                required
-                rows={2}
-                value={fullAddress}
-                onChange={(e) => setFullAddress(e.target.value)}
-                className="w-full bg-white text-xs sm:text-sm text-[#06201A] px-3.5 py-2.5 rounded-xl border border-gray-300 focus:border-[#D4AF37] focus:ring-2 focus:ring-[#D4AF37]/20 focus:outline-hidden transition-all shadow-2xs"
-              />
-            </div>
-
-            {/* Pure Cash on Delivery Note (Minimal & Clean) */}
-            <div className="p-3 bg-[#FAF7EC]/80 rounded-2xl border border-[#D4AF37]/30 flex items-center gap-2.5 text-xs text-[#06201A]">
-              <Banknote className="w-4 h-4 text-[#AA820A] shrink-0" />
-              <span>
-                <strong>Cash on Delivery:</strong> Pay full amount in cash after receiving and verifying your parcel.
-              </span>
             </div>
           </div>
 

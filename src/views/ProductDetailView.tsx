@@ -48,16 +48,32 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({ product })
     navigateTo('checkout');
   };
 
-  const handleShare = () => {
+  const handleShare = async () => {
     if (navigator.share) {
-      navigator.share({
-        title: product.name,
-        text: `Check out ${product.name} on HAYBAH`,
-        url: window.location.href,
-      });
+      try {
+        await navigator.share({
+          title: product.name,
+          text: `Check out ${product.name} on HAYBAH`,
+          url: window.location.href,
+        });
+      } catch (err: unknown) {
+        // Ignore AbortError when user cancels native sharing dialog
+        if (err instanceof Error && err.name === 'AbortError') {
+          return;
+        }
+        // Fallback to clipboard if share failed for other reasons
+        if (navigator.clipboard?.writeText) {
+          navigator.clipboard.writeText(window.location.href).catch(() => {});
+          showToast('Product link copied to clipboard!');
+        }
+      }
     } else {
-      navigator.clipboard.writeText(window.location.href);
-      showToast('Product link copied to clipboard!');
+      if (navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(window.location.href).catch(() => {});
+        showToast('Product link copied to clipboard!');
+      } else {
+        showToast('Product link: ' + window.location.href);
+      }
     }
   };
 
