@@ -56,9 +56,6 @@ export const AdminRoot: React.FC = () => {
           setIsAuthenticated(true);
           localStorage.setItem('haybah_admin_authenticated', 'true');
         }
-      } else if (event === 'SIGNED_OUT') {
-        setIsAuthenticated(false);
-        localStorage.removeItem('haybah_admin_authenticated');
       }
     });
 

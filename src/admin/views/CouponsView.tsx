@@ -9,11 +9,15 @@ import {
   XCircle,
   Clock,
   Sparkles,
+  Loader2,
+  AlertCircle,
 } from 'lucide-react';
 import { Coupon } from '../../types';
 import { adminFetchAllCoupons } from '../../services/supabaseService';
+import { saveLocalCoupon, deleteLocalCoupon, playAdminChime } from '../../services/localAdminStore';
 import { supabase } from '../../lib/supabase';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { AdminNotification, NotificationType } from '../components/AdminNotification';
 
 export const CouponsView: React.FC = () => {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
@@ -21,6 +25,12 @@ export const CouponsView: React.FC = () => {
   const [editingCoupon, setEditingCoupon] = useState<Partial<Coupon> | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [notification, setNotification] = useState<{ message: string | null; type: NotificationType }>({
+    message: null,
+    type: 'success',
+  });
 
   const loadCoupons = async () => {
     setLoading(true);
@@ -35,7 +45,18 @@ export const CouponsView: React.FC = () => {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingCoupon?.code?.trim() || !editingCoupon?.value) return;
+    setFormError(null);
+
+    if (!editingCoupon?.code?.trim()) {
+      setFormError('দয়া করে কুপন কোড লিখুন (Coupon Code is required)');
+      return;
+    }
+    if (!editingCoupon?.value || Number(editingCoupon.value) <= 0) {
+      setFormError('দয়া করে সঠিক ডিসকাউন্ট ভ্যালু লিখুন (Valid discount value is required)');
+      return;
+    }
+
+    setIsSaving(true);
 
     const code = editingCoupon.code.trim().toUpperCase();
     const payload = {
@@ -53,38 +74,73 @@ export const CouponsView: React.FC = () => {
       updated_at: new Date().toISOString(),
     };
 
+    // 1. Local persist
+    saveLocalCoupon({
+      id: editingCoupon.id,
+      code,
+      type: editingCoupon.type || 'percent',
+      value: Number(editingCoupon.value),
+      minOrder: Number(editingCoupon.minOrder || 0),
+      maxDiscount: Number(editingCoupon.maxDiscount || 0),
+      usageLimit: Number(editingCoupon.usageLimit || 100),
+      usedCount: Number(editingCoupon.usedCount || 0),
+      isActive: editingCoupon.isActive ?? true,
+      startDate: editingCoupon.startDate || new Date().toISOString(),
+      endDate: editingCoupon.endDate || undefined,
+    });
+
+    // 2. Remote sync in background
     try {
       await supabase.from('coupons').upsert(payload);
     } catch (err) {
-      console.warn('Coupon save error:', err);
+      console.warn('Coupon remote save note:', err);
     }
 
     setIsModalOpen(false);
     setEditingCoupon(null);
-    loadCoupons();
+    setIsSaving(false);
+    await loadCoupons();
+    playAdminChime('success');
+    setNotification({
+      message: '✓ কুপন কোড সফলভাবে সংরক্ষিত হয়েছে! (Coupon Saved)',
+      type: 'success',
+    });
   };
 
   const handleDelete = async () => {
     if (!deleteTargetId) return;
+    deleteLocalCoupon(deleteTargetId);
     try {
       await supabase.from('coupons').delete().eq('id', deleteTargetId);
     } catch (e) {
       console.warn(e);
     }
     setDeleteTargetId(null);
-    loadCoupons();
+    await loadCoupons();
+    playAdminChime('delete');
+    setNotification({
+      message: '✓ কুপন মুছে ফেলা হয়েছে! (Coupon Removed)',
+      type: 'delete',
+    });
   };
 
   const toggleActive = async (c: Coupon) => {
+    const nextActive = !c.isActive;
+    saveLocalCoupon({ id: c.id, code: c.code, isActive: nextActive });
     try {
       await supabase
         .from('coupons')
-        .update({ is_active: !c.isActive, updated_at: new Date().toISOString() })
+        .update({ is_active: nextActive, updated_at: new Date().toISOString() })
         .eq('id', c.id);
     } catch (e) {
       console.warn(e);
     }
-    loadCoupons();
+    await loadCoupons();
+    playAdminChime('success');
+    setNotification({
+      message: `✓ কুপন "${c.code}" - ${nextActive ? 'সক্রিয়' : 'নিষ্ক্রিয়'} করা হয়েছে!`,
+      type: 'success',
+    });
   };
 
   return (
@@ -216,6 +272,12 @@ export const CouponsView: React.FC = () => {
             </h2>
 
             <form onSubmit={handleSave} className="space-y-4 text-xs">
+              {formError && (
+                <div className="flex items-center gap-2.5 p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 font-bold text-xs">
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span>{formError}</span>
+                </div>
+              )}
               <div>
                 <label className="block font-bold text-gray-700 uppercase mb-1">
                   Coupon Code *
@@ -336,16 +398,31 @@ export const CouponsView: React.FC = () => {
               <div className="flex items-center justify-end gap-2 pt-4 border-t border-gray-200">
                 <button
                   type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-xl border border-gray-300 font-bold text-gray-700 hover:bg-gray-50"
+                  disabled={isSaving}
+                  onClick={() => {
+                    setIsModalOpen(false);
+                    setFormError(null);
+                  }}
+                  className="px-4 py-2.5 rounded-xl border border-gray-300 font-bold text-gray-700 hover:bg-gray-50 cursor-pointer disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-[#06201A] hover:bg-[#0B2B22] text-[#D4AF37] font-black uppercase tracking-wider"
+                  disabled={isSaving}
+                  className="px-6 py-2.5 rounded-xl bg-[#06201A] hover:bg-[#0B2B22] text-[#D4AF37] font-black uppercase tracking-wider flex items-center gap-2 shadow-lg cursor-pointer disabled:opacity-60 transition-transform active:scale-95"
                 >
-                  Save Coupon
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-[#D4AF37]" />
+                      <span>Saving Coupon...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-4 h-4 text-[#D4AF37]" />
+                      <span>Save Coupon</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>
@@ -362,6 +439,13 @@ export const CouponsView: React.FC = () => {
         isDestructive={true}
         onConfirm={handleDelete}
         onCancel={() => setDeleteTargetId(null)}
+      />
+
+      {/* Toast Notification */}
+      <AdminNotification
+        message={notification.message}
+        type={notification.type}
+        onClose={() => setNotification({ message: null, type: 'success' })}
       />
     </div>
   );

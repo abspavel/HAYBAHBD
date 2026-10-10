@@ -9,12 +9,16 @@ import {
   Image as ImageIcon,
   CheckCircle,
   XCircle,
+  Loader2,
+  AlertCircle,
 } from 'lucide-react';
 import { CategoryItem } from '../../types';
 import { adminFetchAllCategories } from '../../services/supabaseService';
+import { saveLocalCategory, deleteLocalCategory, playAdminChime } from '../../services/localAdminStore';
 import { supabase } from '../../lib/supabase';
 import { ImageUploader } from '../components/ImageUploader';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { AdminNotification, NotificationType } from '../components/AdminNotification';
 
 export const CategoriesView: React.FC = () => {
   const [categories, setCategories] = useState<CategoryItem[]>([]);
@@ -22,6 +26,15 @@ export const CategoriesView: React.FC = () => {
   const [editingCategory, setEditingCategory] = useState<Partial<CategoryItem> | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+
+  // Notification & Feedback
+  const [notification, setNotification] = useState<{ message: string | null; type: NotificationType }>({
+    message: null,
+    type: 'success',
+  });
+  const [isSaving, setIsSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [highlightedId, setHighlightedId] = useState<string | null>(null);
 
   const loadCategories = async () => {
     setLoading(true);
@@ -44,7 +57,14 @@ export const CategoriesView: React.FC = () => {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingCategory?.name?.trim()) return;
+    setFormError(null);
+
+    if (!editingCategory?.name?.trim()) {
+      setFormError('দয়া করে ক্যাটাগরির নাম লিখুন (Category Name is required)');
+      return;
+    }
+
+    setIsSaving(true);
 
     const slug = editingCategory.slug?.trim() || generateSlug(editingCategory.name);
     const catId = editingCategory.id || `cat-${slug}`;
@@ -61,38 +81,73 @@ export const CategoriesView: React.FC = () => {
       updated_at: new Date().toISOString(),
     };
 
+    // 1. Immediately save locally
+    saveLocalCategory({
+      id: catId,
+      name: editingCategory.name.trim(),
+      slug: slug,
+      image: editingCategory.image || 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=800&q=80',
+      badge: editingCategory.badge || '',
+      itemCount: editingCategory.itemCount ?? 2,
+      sortOrder: editingCategory.sortOrder ?? categories.length + 1,
+      isActive: editingCategory.isActive ?? true,
+    });
+
+    // 2. Remote sync in background
     try {
       await supabase.from('categories').upsert(payload);
     } catch (err) {
-      console.warn('Upsert category error:', err);
+      console.warn('Upsert category remote note:', err);
     }
 
     setIsModalOpen(false);
     setEditingCategory(null);
-    loadCategories();
+    setIsSaving(false);
+    await loadCategories();
+
+    setHighlightedId(catId);
+    setTimeout(() => setHighlightedId(null), 3000);
+    playAdminChime('success');
+    setNotification({
+      message: '✓ ক্যাটাগরি সফলভাবে সংরক্ষিত হয়েছে! (Category Saved Successfully)',
+      type: 'success',
+    });
   };
 
   const handleDelete = async () => {
     if (!deleteTargetId) return;
+    deleteLocalCategory(deleteTargetId);
     try {
       await supabase.from('categories').delete().eq('id', deleteTargetId);
     } catch (err) {
       console.warn('Delete category error:', err);
     }
     setDeleteTargetId(null);
-    loadCategories();
+    await loadCategories();
+    playAdminChime('delete');
+    setNotification({
+      message: '✓ ক্যাটাগরি মুছে ফেলা হয়েছে! (Category Removed)',
+      type: 'delete',
+    });
   };
 
   const toggleActive = async (cat: CategoryItem) => {
+    const nextActive = !cat.isActive;
+    saveLocalCategory({ id: cat.id, isActive: nextActive });
     try {
       await supabase
         .from('categories')
-        .update({ is_active: !cat.isActive, updated_at: new Date().toISOString() })
+        .update({ is_active: nextActive, updated_at: new Date().toISOString() })
         .eq('id', cat.id);
     } catch (e) {
       console.warn(e);
     }
-    loadCategories();
+    await loadCategories();
+    playAdminChime('success');
+    setNotification({
+      message: `✓ "${cat.name}" - ${nextActive ? 'সক্রিয়' : 'নিষ্ক্রিয়'} করা হয়েছে!`,
+      type: 'success',
+    });
   };
 
   const moveOrder = async (index: number, direction: 'up' | 'down') => {
@@ -103,7 +158,16 @@ export const CategoriesView: React.FC = () => {
     const [moved] = updated.splice(index, 1);
     updated.splice(targetIndex, 0, moved);
 
+    updated.forEach((c, i) => {
+      saveLocalCategory({ id: c.id, sortOrder: i + 1 });
+    });
+
     setCategories(updated);
+    playAdminChime('success');
+    setNotification({
+      message: '✓ ক্রমবিন্যাস আপডেট হয়েছে! (Order Updated)',
+      type: 'info',
+    });
 
     try {
       for (let i = 0; i < updated.length; i++) {
@@ -115,6 +179,7 @@ export const CategoriesView: React.FC = () => {
     } catch (e) {
       console.warn('Reorder error:', e);
     }
+    await loadCategories();
   };
 
   return (
@@ -248,6 +313,12 @@ export const CategoriesView: React.FC = () => {
             </h2>
 
             <form onSubmit={handleSave} className="space-y-4 text-xs">
+              {formError && (
+                <div className="flex items-center gap-2.5 p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 font-bold text-xs">
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span>{formError}</span>
+                </div>
+              )}
               <div>
                 <label className="block font-bold text-gray-700 uppercase mb-1">
                   Category Name *
@@ -328,16 +399,31 @@ export const CategoriesView: React.FC = () => {
               <div className="flex items-center justify-end gap-2 pt-4 border-t border-gray-200">
                 <button
                   type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-xl border border-gray-300 font-bold text-gray-700 hover:bg-gray-50"
+                  disabled={isSaving}
+                  onClick={() => {
+                    setIsModalOpen(false);
+                    setFormError(null);
+                  }}
+                  className="px-4 py-2.5 rounded-xl border border-gray-300 font-bold text-gray-700 hover:bg-gray-50 cursor-pointer disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-[#06201A] hover:bg-[#0B2B22] text-[#D4AF37] font-black uppercase tracking-wider"
+                  disabled={isSaving}
+                  className="px-6 py-2.5 rounded-xl bg-[#06201A] hover:bg-[#0B2B22] text-[#D4AF37] font-black uppercase tracking-wider flex items-center gap-2 shadow-lg cursor-pointer disabled:opacity-60 transition-transform active:scale-95"
                 >
-                  Save Category
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-[#D4AF37]" />
+                      <span>Saving Category...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-4 h-4 text-[#D4AF37]" />
+                      <span>Save Category</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>
@@ -354,6 +440,13 @@ export const CategoriesView: React.FC = () => {
         isDestructive={true}
         onConfirm={handleDelete}
         onCancel={() => setDeleteTargetId(null)}
+      />
+
+      {/* Toast Notification */}
+      <AdminNotification
+        message={notification.message}
+        type={notification.type}
+        onClose={() => setNotification({ message: null, type: 'success' })}
       />
     </div>
   );

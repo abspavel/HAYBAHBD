@@ -16,9 +16,16 @@ import {
 } from 'lucide-react';
 import { IncompleteOrder, IncompleteOrderStatus } from '../../types';
 import { adminFetchAllIncompleteOrders } from '../../services/supabaseService';
+import {
+  updateLocalIncompleteOrder,
+  saveLocalOrder,
+  deleteLocalIncompleteOrder,
+  playAdminChime,
+} from '../../services/localAdminStore';
 import { supabase } from '../../lib/supabase';
 import { StatusBadge } from '../components/StatusBadge';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { AdminNotification, NotificationType } from '../components/AdminNotification';
 
 interface IncompleteOrdersViewProps {
   onOrderCreated?: (orderId: string) => void;
@@ -33,6 +40,10 @@ export const IncompleteOrdersView: React.FC<IncompleteOrdersViewProps> = ({
   const [statusFilter, setStatusFilter] = useState<'ALL' | IncompleteOrderStatus>('ALL');
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const [convertingId, setConvertingId] = useState<string | null>(null);
+  const [notification, setNotification] = useState<{ message: string | null; type: NotificationType }>({
+    message: null,
+    type: 'success',
+  });
 
   const loadData = async () => {
     setLoading(true);
@@ -67,6 +78,7 @@ export const IncompleteOrdersView: React.FC<IncompleteOrdersViewProps> = ({
   };
 
   const handleStatusChange = async (incId: string, newStatus: IncompleteOrderStatus) => {
+    updateLocalIncompleteOrder(incId, { status: newStatus });
     try {
       await supabase
         .from('incomplete_orders')
@@ -75,19 +87,45 @@ export const IncompleteOrdersView: React.FC<IncompleteOrdersViewProps> = ({
     } catch (e) {
       console.warn(e);
     }
-    loadData();
+    await loadData();
   };
 
   const handleConvert = async (inc: IncompleteOrder) => {
     setConvertingId(inc.id);
+    const genId = `HYB-${Math.floor(100000 + Math.random() * 900000)}`;
+
+    // Create converted order in local store immediately
+    saveLocalOrder({
+      orderId: genId,
+      customerName: inc.customerName || 'Customer',
+      phone: inc.phone,
+      address: inc.address || 'Phone Order Confirmation',
+      district: inc.district || 'Dhaka',
+      thana: inc.thana || 'Dhaka',
+      city: inc.city || 'Inside Dhaka',
+      paymentMethod: 'Cash on Delivery',
+      items: inc.cartItems || [],
+      subtotal: Math.max(0, inc.totalAmount - 80),
+      deliveryFee: 80,
+      discount: 0,
+      total: inc.totalAmount,
+      status: 'confirmed',
+      notes: 'Converted from incomplete drop lead',
+      createdAt: new Date().toLocaleDateString('en-GB', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      }),
+    });
+    updateLocalIncompleteOrder(inc.id, { status: 'converted' });
+
     try {
       const { data, error } = await supabase.rpc('convert_incomplete', {
         p_incomplete_id: inc.id,
       });
 
       if (error) {
-        // Fallback manual convert
-        const genId = `HYB-${Math.floor(100000 + Math.random() * 900000)}`;
+        // Fallback manual convert on remote
         await supabase.from('orders').insert({
           id: genId,
           order_number: genId,
@@ -97,7 +135,7 @@ export const IncompleteOrdersView: React.FC<IncompleteOrdersViewProps> = ({
           district: inc.district || 'Dhaka',
           thana: inc.thana || 'Dhaka',
           city: inc.city || 'Inside Dhaka',
-          subtotal: inc.totalAmount - 80,
+          subtotal: Math.max(0, inc.totalAmount - 80),
           delivery_fee: 80,
           total: inc.totalAmount,
           status: 'confirmed',
@@ -112,12 +150,15 @@ export const IncompleteOrdersView: React.FC<IncompleteOrdersViewProps> = ({
         if (onOrderCreated) onOrderCreated(genId);
       } else if (data?.order_id && onOrderCreated) {
         onOrderCreated(data.order_id);
+      } else if (onOrderCreated) {
+        onOrderCreated(genId);
       }
     } catch (e) {
       console.warn('Convert error:', e);
+      if (onOrderCreated) onOrderCreated(genId);
     } finally {
       setConvertingId(null);
-      loadData();
+      await loadData();
     }
   };
 

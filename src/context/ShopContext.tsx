@@ -20,6 +20,10 @@ import {
   DEFAULT_BANNERS,
   DEFAULT_SETTINGS,
 } from '../services/supabaseService';
+import {
+  saveLocalOrder,
+  saveLocalIncompleteOrder,
+} from '../services/localAdminStore';
 import { supabase } from '../lib/supabase';
 
 interface Toast {
@@ -193,7 +197,11 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
+    window.addEventListener('haybah:store-updated', refreshStoreData);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('haybah:store-updated', refreshStoreData);
+    };
   }, [refreshStoreData]);
 
   // Sync to localStorage
@@ -327,6 +335,20 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }) => {
     if (!data.phone || cart.length === 0) return;
     const { total } = getCartTotal();
+
+    // 1. Immediately save to local admin store
+    saveLocalIncompleteOrder({
+      phone: data.phone,
+      customerName: data.name,
+      address: data.address,
+      city: data.city,
+      district: data.district,
+      thana: data.thana,
+      cartItems: cart,
+      totalAmount: total,
+    });
+
+    // 2. Remote sync
     rpcSaveIncompleteOrder({
       ...data,
       items: cart,
@@ -397,6 +419,10 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }),
     };
 
+    // 1. Immediately persist to local admin orders and customer list
+    saveLocalOrder(newOrder);
+
+    // 2. Update context state
     setOrders((prev) => [newOrder, ...prev]);
     setActiveOrderConfirmation(newOrder);
     clearCart();

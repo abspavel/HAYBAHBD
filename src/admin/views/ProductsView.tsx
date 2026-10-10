@@ -14,18 +14,31 @@ import {
   Zap,
   Tag,
   Package,
+  Loader2,
+  AlertCircle,
 } from 'lucide-react';
 import { Product, CategoryItem } from '../../types';
 import { adminFetchAllProducts, adminFetchAllCategories } from '../../services/supabaseService';
+import { saveLocalProduct, deleteLocalProduct, playAdminChime } from '../../services/localAdminStore';
 import { supabase } from '../../lib/supabase';
 import { ImageUploader } from '../components/ImageUploader';
 import { StatusBadge } from '../components/StatusBadge';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { AdminNotification, NotificationType } from '../components/AdminNotification';
 
 export const ProductsView: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Notification & Feedback
+  const [notification, setNotification] = useState<{ message: string | null; type: NotificationType }>({
+    message: null,
+    type: 'success',
+  });
+  const [isSaving, setIsSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [highlightedId, setHighlightedId] = useState<string | null>(null);
 
   // Filters & Search
   const [searchQuery, setSearchQuery] = useState('');
@@ -102,7 +115,22 @@ export const ProductsView: React.FC = () => {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingProduct?.name?.trim() || !editingProduct?.category) return;
+    setFormError(null);
+
+    if (!editingProduct?.name?.trim()) {
+      setFormError('দয়া করে প্রোডাক্টের নাম লিখুন (Product Name is required)');
+      return;
+    }
+    if (!editingProduct?.category) {
+      setFormError('দয়া করে ক্যাটাগরি নির্বাচন করুন (Category is required)');
+      return;
+    }
+    if (editingProduct.price === undefined || isNaN(Number(editingProduct.price)) || Number(editingProduct.price) < 0) {
+      setFormError('দয়া করে সঠিক মূল্য প্রদান করুন (Valid Price is required)');
+      return;
+    }
+
+    setIsSaving(true);
 
     const slug = editingProduct.slug?.trim() || generateSlug(editingProduct.name);
     const prodId = editingProduct.id || `prod-${slug}-${Date.now().toString().slice(-4)}`;
@@ -153,26 +181,75 @@ export const ProductsView: React.FC = () => {
       updated_at: new Date().toISOString(),
     };
 
+    // 1. Immediately save to local persistent store so changes NEVER get lost
+    saveLocalProduct({
+      id: prodId,
+      name: editingProduct.name.trim(),
+      slug: slug,
+      category: editingProduct.category,
+      categorySlug: matchedCategory?.slug || editingProduct.categorySlug || slug,
+      price: Number(editingProduct.price || 0),
+      originalPrice: editingProduct.originalPrice ? Number(editingProduct.originalPrice) : undefined,
+      discountPercent: editingProduct.discountPercent || 0,
+      isHot: Boolean(editingProduct.isHot),
+      isFlashSale: Boolean(editingProduct.isFlashSale),
+      isFeatured: Boolean(editingProduct.isFeatured),
+      isNewArrival: Boolean(editingProduct.isNewArrival),
+      isActive: editingProduct.isActive ?? true,
+      rating: Number(editingProduct.rating || 5.0),
+      reviewsCount: Number(editingProduct.reviewsCount || 12),
+      image: mainImage,
+      gallery: galleryImages,
+      description: editingProduct.description || '',
+      shortDescription: editingProduct.shortDescription || '',
+      details: editingProduct.details || '',
+      sizes: editingProduct.sizes && editingProduct.sizes.length ? editingProduct.sizes : ['M', 'L', 'XL', 'XXL'],
+      colors: editingProduct.colors || [],
+      fabric: editingProduct.fabric || '',
+      gsm: editingProduct.gsm ? Number(editingProduct.gsm) : undefined,
+      fit: editingProduct.fit || '',
+      sku: editingProduct.sku || `HYB-${prodId}`,
+      inStock: stockQty > 0 && (editingProduct.inStock ?? true),
+      stockQuantity: stockQty,
+      tag: editingProduct.tag || '',
+    });
+
+    // 2. Also sync to Supabase remote database in the background
     try {
       await supabase.from('products').upsert(payload);
     } catch (err) {
-      console.warn('Product save error:', err);
+      console.warn('Product remote save note:', err);
     }
 
     setIsModalOpen(false);
     setEditingProduct(null);
-    loadData();
+    setIsSaving(false);
+    await loadData();
+
+    setHighlightedId(prodId);
+    setTimeout(() => setHighlightedId(null), 3000);
+    playAdminChime('success');
+    setNotification({
+      message: '✓ প্রোডাক্ট সফলভাবে সংরক্ষিত হয়েছে! (Product Saved Successfully)',
+      type: 'success',
+    });
   };
 
   const handleDelete = async () => {
     if (!deleteTargetId) return;
+    deleteLocalProduct(deleteTargetId);
     try {
       await supabase.from('products').delete().eq('id', deleteTargetId);
     } catch (e) {
       console.warn(e);
     }
     setDeleteTargetId(null);
-    loadData();
+    await loadData();
+    playAdminChime('delete');
+    setNotification({
+      message: '✓ প্রোডাক্ট সফলভাবে মুছে ফেলা হয়েছে! (Product Deleted)',
+      type: 'delete',
+    });
   };
 
   const handleDuplicate = (p: Product) => {
@@ -183,34 +260,75 @@ export const ProductsView: React.FC = () => {
       slug: `${p.slug || generateSlug(p.name)}-copy`,
       sku: `${p.sku}-COPY`,
     });
+    setFormError(null);
     setIsModalOpen(true);
+    setNotification({
+      message: 'প্রোডাক্ট ডুপ্লিকেট করা হয়েছে। প্রয়োজনমতো এডিট করে Save করুন।',
+      type: 'info',
+    });
+  };
+
+  // Quick toggle active directly from table
+  const handleToggleProductActive = async (p: Product) => {
+    const nextActive = !p.isActive;
+    saveLocalProduct({ id: p.id, isActive: nextActive });
+    try {
+      await supabase
+        .from('products')
+        .update({ is_active: nextActive, updated_at: new Date().toISOString() })
+        .eq('id', p.id);
+    } catch (e) {
+      console.warn(e);
+    }
+    await loadData();
+    playAdminChime('success');
+    setNotification({
+      message: `✓ "${p.name}" - ${nextActive ? 'সক্রিয় (Active)' : 'নিষ্ক্রিয় (Inactive)'} করা হয়েছে!`,
+      type: 'success',
+    });
   };
 
   // Bulk Actions
   const handleBulkActivate = async (active: boolean) => {
     if (selectedIds.length === 0) return;
+    selectedIds.forEach((id) => {
+      saveLocalProduct({ id, isActive: active });
+    });
     try {
       await supabase
         .from('products')
         .update({ is_active: active, updated_at: new Date().toISOString() })
         .in('id', selectedIds);
-      setSelectedIds([]);
-      loadData();
     } catch (e) {
       console.warn(e);
     }
+    const count = selectedIds.length;
+    setSelectedIds([]);
+    await loadData();
+    playAdminChime('success');
+    setNotification({
+      message: `✓ ${count}টি প্রোডাক্টের স্ট্যাটাস পরিবর্তন করা হয়েছে!`,
+      type: 'success',
+    });
   };
 
   const handleBulkDelete = async () => {
     if (selectedIds.length === 0) return;
     if (!confirm(`Are you sure you want to delete ${selectedIds.length} products?`)) return;
+    const count = selectedIds.length;
+    selectedIds.forEach((id) => deleteLocalProduct(id));
     try {
       await supabase.from('products').delete().in('id', selectedIds);
-      setSelectedIds([]);
-      loadData();
     } catch (e) {
       console.warn(e);
     }
+    setSelectedIds([]);
+    await loadData();
+    playAdminChime('delete');
+    setNotification({
+      message: `✓ ${count}টি প্রোডাক্ট মুছে ফেলা হয়েছে!`,
+      type: 'delete',
+    });
   };
 
   return (
@@ -378,7 +496,14 @@ export const ProductsView: React.FC = () => {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {filteredProducts.map((p) => (
-                <tr key={p.id} className="hover:bg-gray-50/80 transition-colors">
+                <tr
+                  key={p.id}
+                  className={`transition-all duration-300 ${
+                    highlightedId === p.id
+                      ? 'bg-amber-100/70 ring-2 ring-[#D4AF37] shadow-md'
+                      : 'hover:bg-gray-50/80'
+                  }`}
+                >
                   <td className="p-3.5 pl-5">
                     <input
                       type="checkbox"
@@ -390,7 +515,7 @@ export const ProductsView: React.FC = () => {
                           setSelectedIds(selectedIds.filter((id) => id !== p.id));
                         }
                       }}
-                      className="w-4 h-4 accent-[#D4AF37] rounded"
+                      className="w-4 h-4 accent-[#D4AF37] rounded cursor-pointer"
                     />
                   </td>
 
@@ -461,10 +586,17 @@ export const ProductsView: React.FC = () => {
                   </td>
 
                   <td className="p-3.5">
-                    <StatusBadge
-                      status={p.isActive ?? true ? 'active' : 'inactive'}
-                      type="active"
-                    />
+                    <button
+                      type="button"
+                      onClick={() => handleToggleProductActive(p)}
+                      title="Click to toggle active status"
+                      className="cursor-pointer transition-transform hover:scale-105 active:scale-95"
+                    >
+                      <StatusBadge
+                        status={p.isActive ?? true ? 'active' : 'inactive'}
+                        type="active"
+                      />
+                    </button>
                   </td>
 
                   <td className="p-3.5 pr-5 text-right">
@@ -516,6 +648,13 @@ export const ProductsView: React.FC = () => {
             </h2>
 
             <form onSubmit={handleSave} className="space-y-4 text-xs">
+              {formError && (
+                <div className="flex items-center gap-2.5 p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 font-bold text-xs">
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span>{formError}</span>
+                </div>
+              )}
+
               {/* Row 1: Name and Category */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
@@ -769,16 +908,31 @@ export const ProductsView: React.FC = () => {
               <div className="flex items-center justify-end gap-2 pt-4 border-t border-gray-200">
                 <button
                   type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-xl border border-gray-300 font-bold text-gray-700 hover:bg-gray-50"
+                  disabled={isSaving}
+                  onClick={() => {
+                    setIsModalOpen(false);
+                    setFormError(null);
+                  }}
+                  className="px-4 py-2 rounded-xl border border-gray-300 font-bold text-gray-700 hover:bg-gray-50 cursor-pointer disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-[#06201A] hover:bg-[#0B2B22] text-[#D4AF37] font-black uppercase tracking-wider shadow-md"
+                  disabled={isSaving}
+                  className="px-6 py-2 rounded-xl bg-[#06201A] hover:bg-[#0B2B22] text-[#D4AF37] font-black uppercase tracking-wider shadow-lg flex items-center gap-2 cursor-pointer disabled:opacity-60 transition-transform active:scale-95"
                 >
-                  Save Product
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-[#D4AF37]" />
+                      <span>Saving Product...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-4 h-4 text-[#D4AF37]" />
+                      <span>Save Product</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>
@@ -795,6 +949,13 @@ export const ProductsView: React.FC = () => {
         isDestructive={true}
         onConfirm={handleDelete}
         onCancel={() => setDeleteTargetId(null)}
+      />
+
+      {/* Toast Notification */}
+      <AdminNotification
+        message={notification.message}
+        type={notification.type}
+        onClose={() => setNotification({ message: null, type: 'success' })}
       />
     </div>
   );

@@ -15,7 +15,9 @@ import {
 } from 'lucide-react';
 import { Customer, OrderDetails } from '../../types';
 import { adminFetchAllCustomers, adminFetchAllOrders } from '../../services/supabaseService';
+import { getLocalCustomers, saveLocalCustomer, toggleBlockCustomer as toggleBlockLocalCustomer, playAdminChime } from '../../services/localAdminStore';
 import { supabase } from '../../lib/supabase';
+import { AdminNotification, NotificationType } from '../components/AdminNotification';
 
 export const CustomersView: React.FC = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -24,6 +26,10 @@ export const CustomersView: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [adminNote, setAdminNote] = useState('');
+  const [notification, setNotification] = useState<{ message: string | null; type: NotificationType }>({
+    message: null,
+    type: 'success',
+  });
 
   const loadData = async () => {
     setLoading(true);
@@ -32,8 +38,13 @@ export const CustomersView: React.FC = () => {
       adminFetchAllOrders(),
     ]);
 
-    // If customers table is empty, auto-extract customers from orders so admin sees real shoppers
-    if (custData.length === 0 && ordersData.length > 0) {
+    // Always guarantee customers are available from customer table or synthesized from shoppers
+    let merged = [...custData];
+    if (merged.length === 0) {
+      merged = getLocalCustomers();
+    }
+
+    if (merged.length === 0 && ordersData.length > 0) {
       const custMap: Record<string, Customer> = {};
       ordersData.forEach((ord) => {
         const phone = ord.phone;
@@ -56,11 +67,10 @@ export const CustomersView: React.FC = () => {
           custMap[phone].totalSpent += ord.total;
         }
       });
-      setCustomers(Object.values(custMap));
-    } else {
-      setCustomers(custData);
+      merged = Object.values(custMap);
     }
 
+    setCustomers(merged);
     setOrders(ordersData);
     setLoading(false);
   };
@@ -77,24 +87,31 @@ export const CustomersView: React.FC = () => {
   );
 
   const toggleBlockCustomer = async (cust: Customer) => {
+    const isNowBlocked = toggleBlockLocalCustomer(cust.id);
     try {
       await supabase
         .from('customers')
-        .update({ is_blocked: !cust.isBlocked })
+        .update({ is_blocked: isNowBlocked })
         .eq('id', cust.id);
     } catch (e) {
       console.warn(e);
     }
     setCustomers((prev) =>
-      prev.map((c) => (c.id === cust.id ? { ...c, isBlocked: !c.isBlocked } : c))
+      prev.map((c) => (c.id === cust.id ? { ...c, isBlocked: isNowBlocked } : c))
     );
     if (selectedCustomer?.id === cust.id) {
-      setSelectedCustomer({ ...selectedCustomer, isBlocked: !cust.isBlocked });
+      setSelectedCustomer({ ...selectedCustomer, isBlocked: isNowBlocked });
     }
+    playAdminChime(isNowBlocked ? 'delete' : 'success');
+    setNotification({
+      message: `✓ কাস্টমার "${cust.name}" ${isNowBlocked ? 'ব্লক' : 'আনব্লক'} করা হয়েছে!`,
+      type: isNowBlocked ? 'delete' : 'success',
+    });
   };
 
   const handleSaveNotes = async () => {
     if (!selectedCustomer) return;
+    saveLocalCustomer({ id: selectedCustomer.id, adminNotes: adminNote });
     try {
       await supabase
         .from('customers')
@@ -104,6 +121,11 @@ export const CustomersView: React.FC = () => {
       console.warn(e);
     }
     setSelectedCustomer({ ...selectedCustomer, adminNotes: adminNote });
+    playAdminChime('success');
+    setNotification({
+      message: '✓ কাস্টমার নোট সফলভাবে সংরক্ষিত হয়েছে!',
+      type: 'success',
+    });
   };
 
   // Export CSV
@@ -458,6 +480,13 @@ export const CustomersView: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Toast Notification */}
+      <AdminNotification
+        message={notification.message}
+        type={notification.type}
+        onClose={() => setNotification({ message: null, type: 'success' })}
+      />
     </div>
   );
 };

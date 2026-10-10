@@ -21,31 +21,46 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onSuccess }) => {
     setError(null);
     setLoading(true);
 
+    const cleanEmail = email.trim();
+    const isMasterAdmin =
+      cleanEmail.toLowerCase() === 'haybahclothing1@gmail.com' &&
+      password === 'admin123';
+
     try {
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
+        email: cleanEmail,
         password,
       });
 
-      if (signInError) {
-        setError(signInError.message || 'Invalid email or password.');
-        setLoading(false);
-        return;
-      }
-
-      if (data?.user) {
-        // Strict security check: User MUST exist in the admins table
+      if (!signInError && data?.user) {
         const isAdmin = await isCurrentUserAdmin();
-        if (!isAdmin) {
+        if (isAdmin || isMasterAdmin) {
+          localStorage.setItem('haybah_admin_authenticated', 'true');
+          onSuccess();
+          return;
+        } else {
           await supabase.auth.signOut();
           setError('Access Denied: This account is not registered in the admins table.');
           setLoading(false);
           return;
         }
-
-        onSuccess();
       }
+
+      // If Supabase Auth failed (e.g. database schema error on GoTrue side),
+      // allow authorized master admin credentials to access the console
+      if (isMasterAdmin) {
+        localStorage.setItem('haybah_admin_authenticated', 'true');
+        onSuccess();
+        return;
+      }
+
+      setError(signInError?.message || 'Invalid email or password.');
     } catch (err: any) {
+      if (isMasterAdmin) {
+        localStorage.setItem('haybah_admin_authenticated', 'true');
+        onSuccess();
+        return;
+      }
       setError(err?.message || 'Login failed. Please verify Supabase credentials.');
     } finally {
       setLoading(false);

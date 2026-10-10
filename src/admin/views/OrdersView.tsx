@@ -13,8 +13,10 @@ import {
 } from 'lucide-react';
 import { OrderDetails, OrderStatus } from '../../types';
 import { adminFetchAllOrders } from '../../services/supabaseService';
+import { playAdminChime } from '../../services/localAdminStore';
 import { StatusBadge } from '../components/StatusBadge';
 import { OrderDetailsDrawer } from '../components/OrderDetailsDrawer';
+import { AdminNotification, NotificationType } from '../components/AdminNotification';
 
 interface OrdersViewProps {
   onSelectOrder?: (order: OrderDetails) => void;
@@ -26,6 +28,10 @@ export const OrdersView: React.FC<OrdersViewProps> = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeStatusTab, setActiveStatusTab] = useState<'all' | OrderStatus>('all');
   const [selectedOrder, setSelectedOrder] = useState<OrderDetails | null>(null);
+  const [notification, setNotification] = useState<{ message: string | null; type: NotificationType }>({
+    message: null,
+    type: 'success',
+  });
 
   const loadOrders = async () => {
     setLoading(true);
@@ -319,7 +325,21 @@ export const OrdersView: React.FC<OrdersViewProps> = () => {
         order={selectedOrder}
         isOpen={Boolean(selectedOrder)}
         onClose={() => setSelectedOrder(null)}
-        onStatusUpdated={() => loadOrders()}
+        onStatusUpdated={async () => {
+          await loadOrders();
+          playAdminChime('success');
+          setNotification({
+            message: '✓ অর্ডার স্ট্যাটাস সফলভাবে আপডেট করা হয়েছে! (Order Status Updated)',
+            type: 'success',
+          });
+        }}
+      />
+
+      {/* Toast Notification */}
+      <AdminNotification
+        message={notification.message}
+        type={notification.type}
+        onClose={() => setNotification({ message: null, type: 'success' })}
       />
     </div>
   );

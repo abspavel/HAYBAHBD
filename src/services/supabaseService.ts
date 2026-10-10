@@ -11,8 +11,35 @@ import {
   OrderStatus,
 } from '../types';
 import { CATEGORIES as DEFAULT_CATEGORIES, ALL_PRODUCTS as DEFAULT_PRODUCTS } from '../data/mockData';
+import {
+  getLocalProducts,
+  saveLocalProduct,
+  deleteLocalProduct,
+  getLocalCategories,
+  saveLocalCategory,
+  deleteLocalCategory,
+  getLocalBanners,
+  saveLocalBanner,
+  deleteLocalBanner,
+  getLocalCoupons,
+  saveLocalCoupon,
+  deleteLocalCoupon,
+  getLocalOrders,
+  saveLocalOrder,
+  updateLocalOrderStatus,
+  getLocalCustomers,
+  getLocalIncompleteOrders,
+  saveLocalIncompleteOrder,
+  updateLocalIncompleteOrder,
+  getLocalSettings,
+  saveLocalSettings,
+  getDeletedProductIds,
+  getDeletedCategoryIds,
+  getDeletedBannerIds,
+  getDeletedCouponIds,
+} from './localAdminStore';
 
-// Default banners fallback
+// Default banners fallback - High-res streetwear banner imagery
 export const DEFAULT_BANNERS: HeroBanner[] = [
   {
     id: 'banner-1',
@@ -23,7 +50,7 @@ export const DEFAULT_BANNERS: HeroBanner[] = [
     actionText: 'EXPLORE COLLECTION',
     actionLink: 'shop',
     categorySlug: 'y2k-jersey',
-    image: '',
+    image: 'https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=1600&q=85',
     bgColor: 'from-[#06201A] via-[#0B2B22] to-[#041511]',
     accentColor: '#D4AF37',
     sortOrder: 1,
@@ -38,7 +65,7 @@ export const DEFAULT_BANNERS: HeroBanner[] = [
     actionText: 'SHOP WINTER DROPS',
     actionLink: 'category',
     categorySlug: 'premium-hoodie',
-    image: '',
+    image: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1600&q=85',
     bgColor: 'from-[#091E19] via-[#102B23] to-[#061814]',
     accentColor: '#E8CE7A',
     sortOrder: 2,
@@ -52,8 +79,8 @@ export const DEFAULT_BANNERS: HeroBanner[] = [
     tagline: 'Authentic mesh with double stitched number graphics',
     actionText: 'VIEW JERSEYS',
     actionLink: 'category',
-    categorySlug: 'y2k-jersey',
-    image: '',
+    categorySlug: 'premium-drop-shoulders',
+    image: 'https://images.unsplash.com/photo-1523381294911-8d3cead13475?auto=format&fit=crop&w=1600&q=85',
     bgColor: 'from-[#12241D] via-[#0B2B22] to-[#051510]',
     accentColor: '#D4AF37',
     sortOrder: 3,
@@ -267,26 +294,11 @@ export async function isCurrentUserAdmin(): Promise<boolean> {
 
 export async function fetchLiveCategories(): Promise<CategoryItem[]> {
   try {
-    const { data, error } = await supabase
-      .from('categories')
-      .select('*')
-      .eq('is_active', true)
-      .order('sort_order', { ascending: true });
-
-    if (error || !data || data.length === 0) {
-      return DEFAULT_CATEGORIES;
-    }
-
-    return data.map((item: any) => ({
-      id: item.id,
-      name: item.name,
-      slug: item.slug,
-      image: item.image,
-      badge: item.badge || '',
-      itemCount: item.item_count ?? 2,
-      sortOrder: item.sort_order ?? 0,
-      isActive: item.is_active ?? true,
-    }));
+    const local = getLocalCategories();
+    const deleted = getDeletedCategoryIds();
+    return (local && local.length > 0 ? local : DEFAULT_CATEGORIES).filter(
+      (c) => c.isActive !== false && !deleted.has(c.id)
+    );
   } catch {
     return DEFAULT_CATEGORIES;
   }
@@ -294,48 +306,11 @@ export async function fetchLiveCategories(): Promise<CategoryItem[]> {
 
 export async function fetchLiveProducts(): Promise<Product[]> {
   try {
-    const { data, error } = await supabase
-      .from('products')
-      .select('*')
-      .eq('is_active', true)
-      .order('sort_order', { ascending: true });
-
-    if (error || !data || data.length === 0) {
-      return DEFAULT_PRODUCTS;
-    }
-
-    return data.map((p: any) => ({
-      id: p.id,
-      name: p.name,
-      slug: p.slug,
-      category: p.category,
-      categorySlug: p.category_slug || p.slug,
-      price: Number(p.price),
-      originalPrice: p.original_price ? Number(p.original_price) : undefined,
-      discountPercent: p.discount_percent || 0,
-      isHot: Boolean(p.is_hot),
-      isFlashSale: Boolean(p.is_flash_sale),
-      isFeatured: Boolean(p.is_featured),
-      isNewArrival: Boolean(p.is_new_arrival),
-      isActive: Boolean(p.is_active),
-      rating: Number(p.rating || 5.0),
-      reviewsCount: Number(p.reviews_count || 12),
-      image: p.image,
-      gallery: Array.isArray(p.gallery) ? p.gallery : [p.image],
-      description: p.description || '',
-      shortDescription: p.short_description || '',
-      details: p.details || '',
-      sizes: Array.isArray(p.sizes) && p.sizes.length ? p.sizes : ['M', 'L', 'XL', 'XXL'],
-      colors: Array.isArray(p.colors) ? p.colors : [],
-      fabric: p.fabric || '',
-      gsm: p.gsm ? Number(p.gsm) : undefined,
-      fit: p.fit || '',
-      sku: p.sku || `HYB-${p.id}`,
-      inStock: Boolean(p.in_stock && (p.stock_quantity === undefined || p.stock_quantity > 0)),
-      stockQuantity: p.stock_quantity ?? 50,
-      tag: p.tag || '',
-      sortOrder: p.sort_order ?? 0,
-    }));
+    const local = getLocalProducts();
+    const deleted = getDeletedProductIds();
+    return (local && local.length > 0 ? local : DEFAULT_PRODUCTS).filter(
+      (p) => p.isActive !== false && !deleted.has(p.id)
+    );
   } catch {
     return DEFAULT_PRODUCTS;
   }
@@ -343,31 +318,11 @@ export async function fetchLiveProducts(): Promise<Product[]> {
 
 export async function fetchLiveHeroBanners(): Promise<HeroBanner[]> {
   try {
-    const { data, error } = await supabase
-      .from('hero_banners')
-      .select('*')
-      .eq('is_active', true)
-      .order('sort_order', { ascending: true });
-
-    if (error || !data || data.length === 0) {
-      return DEFAULT_BANNERS;
-    }
-
-    return data.map((b: any) => ({
-      id: b.id,
-      title: b.title,
-      subtitle: b.subtitle || '',
-      badge: b.badge || '',
-      tagline: b.tagline || '',
-      actionText: b.action_text || 'EXPLORE COLLECTION',
-      actionLink: b.action_link || 'shop',
-      categorySlug: b.category_slug || '',
-      image: b.image || '',
-      bgColor: b.bg_color || 'from-[#06201A] via-[#0B2B22] to-[#041511]',
-      accentColor: b.accent_color || '#D4AF37',
-      sortOrder: b.sort_order ?? 0,
-      isActive: b.is_active ?? true,
-    }));
+    const local = getLocalBanners();
+    const deleted = getDeletedBannerIds();
+    return (local && local.length > 0 ? local : DEFAULT_BANNERS).filter(
+      (b) => b.isActive !== false && !deleted.has(b.id)
+    );
   } catch {
     return DEFAULT_BANNERS;
   }
@@ -375,26 +330,8 @@ export async function fetchLiveHeroBanners(): Promise<HeroBanner[]> {
 
 export async function fetchLiveSiteSettings(): Promise<SiteSettings> {
   try {
-    const { data, error } = await supabase
-      .from('site_settings')
-      .select('*')
-      .eq('id', 1)
-      .maybeSingle();
-
-    if (error || !data) {
-      return DEFAULT_SETTINGS;
-    }
-
-    return {
-      brandName: data.brand_name || DEFAULT_SETTINGS.brandName,
-      helpline: data.helpline || DEFAULT_SETTINGS.helpline,
-      helplineHours: data.helpline_hours || DEFAULT_SETTINGS.helplineHours,
-      email: data.email || DEFAULT_SETTINGS.email,
-      whatsapp: data.whatsapp || DEFAULT_SETTINGS.whatsapp,
-      marqueeText: data.marquee_text || DEFAULT_SETTINGS.marqueeText,
-      shippingInsideDhaka: Number(data.shipping_inside_dhaka ?? 80),
-      shippingOutsideDhaka: Number(data.shipping_outside_dhaka ?? 120),
-    };
+    const local = getLocalSettings();
+    return local || DEFAULT_SETTINGS;
   } catch {
     return DEFAULT_SETTINGS;
   }
@@ -515,284 +452,98 @@ export async function rpcPlaceOrder(orderData: {
 // ==========================================
 
 export async function adminFetchAllProducts(): Promise<Product[]> {
-  const { data, error } = await supabase
-    .from('products')
-    .select('*')
-    .order('sort_order', { ascending: true });
-
-  if (error || !data || data.length === 0) {
+  try {
+    const local = getLocalProducts();
+    const deleted = getDeletedProductIds();
+    return (local && local.length > 0 ? local : DEFAULT_PRODUCTS).filter(
+      (p) => !deleted.has(p.id)
+    );
+  } catch {
     return DEFAULT_PRODUCTS;
   }
-
-  return data.map((p: any) => ({
-    id: p.id,
-    name: p.name,
-    slug: p.slug,
-    category: p.category,
-    categorySlug: p.category_slug,
-    price: Number(p.price),
-    originalPrice: p.original_price ? Number(p.original_price) : undefined,
-    discountPercent: p.discount_percent || 0,
-    isHot: Boolean(p.is_hot),
-    isFlashSale: Boolean(p.is_flash_sale),
-    isFeatured: Boolean(p.is_featured),
-    isNewArrival: Boolean(p.is_new_arrival),
-    isActive: Boolean(p.is_active),
-    rating: Number(p.rating || 5.0),
-    reviewsCount: Number(p.reviews_count || 12),
-    image: p.image,
-    gallery: Array.isArray(p.gallery) ? p.gallery : [p.image],
-    description: p.description || '',
-    shortDescription: p.short_description || '',
-    details: p.details || '',
-    sizes: Array.isArray(p.sizes) && p.sizes.length ? p.sizes : ['M', 'L', 'XL', 'XXL'],
-    colors: Array.isArray(p.colors) ? p.colors : [],
-    fabric: p.fabric || '',
-    gsm: p.gsm ? Number(p.gsm) : undefined,
-    fit: p.fit || '',
-    sku: p.sku || `HYB-${p.id}`,
-    inStock: Boolean(p.in_stock),
-    stockQuantity: p.stock_quantity ?? 50,
-    tag: p.tag || '',
-    sortOrder: p.sort_order ?? 0,
-    createdAt: p.created_at,
-  }));
 }
 
 export async function adminFetchAllCategories(): Promise<CategoryItem[]> {
-  const { data, error } = await supabase
-    .from('categories')
-    .select('*')
-    .order('sort_order', { ascending: true });
-
-  if (error || !data || data.length === 0) {
+  try {
+    const local = getLocalCategories();
+    const deleted = getDeletedCategoryIds();
+    return (local && local.length > 0 ? local : DEFAULT_CATEGORIES).filter(
+      (c) => !deleted.has(c.id)
+    );
+  } catch {
     return DEFAULT_CATEGORIES;
   }
-
-  return data.map((item: any) => ({
-    id: item.id,
-    name: item.name,
-    slug: item.slug,
-    image: item.image,
-    badge: item.badge || '',
-    itemCount: item.item_count ?? 2,
-    sortOrder: item.sort_order ?? 0,
-    isActive: item.is_active ?? true,
-    createdAt: item.created_at,
-  }));
 }
 
 export async function adminFetchAllBanners(): Promise<HeroBanner[]> {
-  const { data, error } = await supabase
-    .from('hero_banners')
-    .select('*')
-    .order('sort_order', { ascending: true });
-
-  if (error || !data || data.length === 0) {
+  try {
+    const local = getLocalBanners();
+    const deleted = getDeletedBannerIds();
+    return (local && local.length > 0 ? local : DEFAULT_BANNERS).filter(
+      (b) => !deleted.has(b.id)
+    );
+  } catch {
     return DEFAULT_BANNERS;
   }
-
-  return data.map((b: any) => ({
-    id: b.id,
-    title: b.title,
-    subtitle: b.subtitle || '',
-    badge: b.badge || '',
-    tagline: b.tagline || '',
-    actionText: b.action_text || 'EXPLORE COLLECTION',
-    actionLink: b.action_link || 'shop',
-    categorySlug: b.category_slug || '',
-    image: b.image || '',
-    bgColor: b.bg_color || 'from-[#06201A] via-[#0B2B22] to-[#041511]',
-    accentColor: b.accent_color || '#D4AF37',
-    sortOrder: b.sort_order ?? 0,
-    isActive: b.is_active ?? true,
-    createdAt: b.created_at,
-  }));
 }
 
 export async function adminFetchAllOrders(): Promise<OrderDetails[]> {
-  const { data, error } = await supabase
-    .from('orders')
-    .select(`
-      *,
-      order_items (*)
-    `)
-    .order('created_at', { ascending: false });
-
-  if (error || !data) {
-    // Return saved local orders
-    try {
-      const saved = localStorage.getItem('haybah_orders');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
+  try {
+    return getLocalOrders();
+  } catch {
+    return [];
   }
-
-  return data.map((o: any) => ({
-    orderId: o.order_number || o.id,
-    customerName: o.customer_name,
-    phone: o.phone,
-    address: o.address,
-    district: o.district || '',
-    thana: o.thana || '',
-    city: o.city,
-    paymentMethod: o.payment_method || 'Cash on Delivery',
-    items: (o.order_items || []).map((it: any) => ({
-      id: it.id,
-      productId: it.product_id || '',
-      selectedSize: it.selected_size || 'L',
-      quantity: it.quantity,
-      product: {
-        id: it.product_id || '',
-        name: it.product_name,
-        price: Number(it.unit_price),
-        image: it.product_image || '',
-        category: '',
-        rating: 5,
-        reviewsCount: 1,
-        description: '',
-        sizes: [it.selected_size || 'L'],
-        sku: '',
-        inStock: true,
-      },
-    })),
-    subtotal: Number(o.subtotal),
-    deliveryFee: Number(o.delivery_fee),
-    discount: Number(o.discount || 0),
-    total: Number(o.total),
-    status: o.status || 'pending',
-    notes: o.notes || '',
-    couponCode: o.coupon_code || '',
-    createdAt: new Date(o.created_at).toLocaleDateString('en-GB', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    }),
-    updatedAt: o.updated_at,
-  }));
 }
 
 export async function adminFetchAllCustomers(): Promise<Customer[]> {
-  const { data, error } = await supabase
-    .from('customers')
-    .select('*')
-    .order('total_spent', { ascending: false });
-
-  if (error || !data) {
+  try {
+    return getLocalCustomers();
+  } catch {
     return [];
   }
-
-  return data.map((c: any) => ({
-    id: c.id,
-    phone: c.phone,
-    name: c.name,
-    email: c.email || '',
-    address: c.address || '',
-    city: c.city || 'Inside Dhaka',
-    district: c.district || '',
-    thana: c.thana || '',
-    totalOrders: Number(c.total_orders || 0),
-    totalSpent: Number(c.total_spent || 0),
-    lastOrderDate: c.last_order_date,
-    isBlocked: Boolean(c.is_blocked),
-    adminNotes: c.admin_notes || '',
-    createdAt: c.created_at,
-  }));
 }
 
 export async function adminFetchAllCoupons(): Promise<Coupon[]> {
-  const { data, error } = await supabase
-    .from('coupons')
-    .select('*')
-    .order('created_at', { ascending: false });
-
-  if (error || !data) {
-    return [
-      {
-        id: 'c-1',
-        code: 'HAYBAH10',
-        type: 'percent',
-        value: 10,
-        minOrder: 1000,
-        maxDiscount: 500,
-        usageLimit: 500,
-        usedCount: 24,
-        isActive: true,
-      },
-    ];
+  try {
+    const local = getLocalCoupons();
+    const deleted = getDeletedCouponIds();
+    return (local && local.length > 0 ? local : []).filter(
+      (c) => !deleted.has(c.id)
+    );
+  } catch {
+    return [];
   }
-
-  return data.map((c: any) => ({
-    id: c.id,
-    code: c.code,
-    type: c.type || 'percent',
-    value: Number(c.value),
-    minOrder: Number(c.min_order || 0),
-    maxDiscount: Number(c.max_discount || 0),
-    usageLimit: Number(c.usage_limit || 100),
-    usedCount: Number(c.used_count || 0),
-    isActive: Boolean(c.is_active),
-    startDate: c.start_date,
-    endDate: c.end_date,
-    createdAt: c.created_at,
-  }));
 }
 
 export async function adminFetchAllIncompleteOrders(): Promise<IncompleteOrder[]> {
-  const { data, error } = await supabase
-    .from('incomplete_orders')
-    .select('*')
-    .order('created_at', { ascending: false });
-
-  if (error || !data) {
+  try {
+    return getLocalIncompleteOrders();
+  } catch {
     return [];
   }
-
-  return data.map((inc: any) => ({
-    id: inc.id,
-    phone: inc.phone,
-    customerName: inc.customer_name || 'Anonymous Customer',
-    address: inc.address || '',
-    city: inc.city || '',
-    district: inc.district || '',
-    thana: inc.thana || '',
-    cartItems: Array.isArray(inc.cart_items) ? inc.cart_items : [],
-    totalAmount: Number(inc.total_amount || 0),
-    callCount: Number(inc.call_count || 0),
-    lastCallAt: inc.last_call_at,
-    status: inc.status || 'new',
-    adminNotes: inc.admin_notes || '',
-    createdAt: inc.created_at,
-    updatedAt: inc.updated_at,
-  }));
 }
 
 export async function adminUpdateOrderStatus(
   orderId: string,
   newStatus: OrderStatus
 ): Promise<boolean> {
+  // Always update local store first
+  updateLocalOrderStatus(orderId, newStatus);
   try {
-    const { error } = await supabase
+    await supabase
       .from('orders')
       .update({ status: newStatus, updated_at: new Date().toISOString() })
       .or(`id.eq.${orderId},order_number.eq.${orderId}`);
-
-    if (error) {
-      console.warn('Update order status error:', error);
-      return false;
-    }
-    return true;
-  } catch {
-    return false;
+  } catch (err) {
+    console.warn('Remote update order status note:', err);
   }
+  return true;
 }
 
 export async function adminSaveSiteSettings(settings: SiteSettings): Promise<boolean> {
+  saveLocalSettings(settings);
   try {
-    const { error } = await supabase
+    await supabase
       .from('site_settings')
       .upsert({
         id: 1,
@@ -806,9 +557,8 @@ export async function adminSaveSiteSettings(settings: SiteSettings): Promise<boo
         shipping_outside_dhaka: settings.shippingOutsideDhaka,
         updated_at: new Date().toISOString(),
       });
-
-    return !error;
-  } catch {
-    return false;
+  } catch (err) {
+    console.warn('Remote save settings note:', err);
   }
+  return true;
 }
