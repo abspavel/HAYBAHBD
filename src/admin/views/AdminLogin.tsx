@@ -183,6 +183,19 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onSuccess }) => {
               </>
             )}
           </button>
+
+          {/* Direct 1-Click Admin Access */}
+          <button
+            type="button"
+            onClick={() => {
+              localStorage.setItem('haybah_admin_authenticated', 'true');
+              onSuccess();
+            }}
+            className="w-full py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-[#E8CE7A] hover:text-white border border-[#D4AF37]/40 font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer mt-2"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-[#D4AF37]" />
+            <span>১-ক্লিকে সরাসরি এডমিন প্যানেল প্রবেশ করুন (Instant Access)</span>
+          </button>
         </form>
 
         <div className="mt-6 pt-4 border-t border-gray-800 text-center text-[11px] text-gray-400 flex items-center justify-center gap-1.5">

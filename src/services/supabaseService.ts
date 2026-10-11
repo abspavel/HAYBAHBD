@@ -37,69 +37,11 @@ import {
   getDeletedCategoryIds,
   getDeletedBannerIds,
   getDeletedCouponIds,
+  DEFAULT_BANNERS,
+  DEFAULT_SETTINGS,
 } from './localAdminStore';
 
-// Default banners fallback - High-res streetwear banner imagery
-export const DEFAULT_BANNERS: HeroBanner[] = [
-  {
-    id: 'banner-1',
-    badge: 'No #1 Streetwear Brand',
-    title: 'URBAN EVOLUTION 2026',
-    subtitle: 'PREMIUM DROPS & EXCLUSIVE CUTS',
-    tagline: 'Engineered for those who lead with energy and edge',
-    actionText: 'EXPLORE COLLECTION',
-    actionLink: 'shop',
-    categorySlug: 'y2k-jersey',
-    image: 'https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=1600&q=85',
-    bgColor: 'from-[#06201A] via-[#0B2B22] to-[#041511]',
-    accentColor: '#D4AF37',
-    sortOrder: 1,
-    isActive: true,
-  },
-  {
-    id: 'banner-2',
-    badge: 'Winter Capsule Collection',
-    title: 'HEAVYWEIGHT HOODIES',
-    subtitle: '420 GSM FRENCH TERRY & CORD SHACKETS',
-    tagline: 'Signature warmth with architectural oversized draping',
-    actionText: 'SHOP WINTER DROPS',
-    actionLink: 'category',
-    categorySlug: 'premium-hoodie',
-    image: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1600&q=85',
-    bgColor: 'from-[#091E19] via-[#102B23] to-[#061814]',
-    accentColor: '#E8CE7A',
-    sortOrder: 2,
-    isActive: true,
-  },
-  {
-    id: 'banner-3',
-    badge: 'Limited Edition Drop',
-    title: 'Y2K MOTOR JERSEYS',
-    subtitle: 'RETRO ATHLETIC APPAREL IN BANGLADESH',
-    tagline: 'Authentic mesh with double stitched number graphics',
-    actionText: 'VIEW JERSEYS',
-    actionLink: 'category',
-    categorySlug: 'premium-drop-shoulders',
-    image: 'https://images.unsplash.com/photo-1523381294911-8d3cead13475?auto=format&fit=crop&w=1600&q=85',
-    bgColor: 'from-[#12241D] via-[#0B2B22] to-[#051510]',
-    accentColor: '#D4AF37',
-    sortOrder: 3,
-    isActive: true,
-  },
-];
-
-// Default site settings
-export const DEFAULT_SETTINGS: SiteSettings = {
-  brandName: 'HAYBAH',
-  helpline: '+880 1642-247530',
-  helplineHours: '(11:00 AM – 08:00 PM)',
-  email: 'haybahclothing1@gmail.com',
-  whatsapp: '+8801642247530',
-  marqueeText:
-    'FREE SHIPPING ON ORDERS OVER ৳2000! | CASH ON DELIVERY AVAILABLE ALL OVER BANGLADESH | 7-DAY EXCHANGE POLICY',
-  shippingInsideDhaka: 80,
-  shippingOutsideDhaka: 120,
-};
+export { DEFAULT_BANNERS, DEFAULT_SETTINGS };
 
 // ==========================================
 // 1. IMAGE COMPRESSION & STORAGE HELPERS
@@ -889,8 +831,8 @@ export async function adminFetchAllOrders(): Promise<OrderDetails[]> {
         address: o.address || '',
         district: o.district || '',
         thana: o.thana || '',
-        city: o.city || '',
-        paymentMethod: o.payment_method || 'cod',
+        city: o.city || 'Inside Dhaka',
+        paymentMethod: o.payment_method || 'Cash on Delivery',
         subtotal: Number(o.subtotal || 0),
         deliveryFee: Number(o.delivery_fee || 0),
         discount: Number(o.discount || 0),
@@ -898,20 +840,39 @@ export async function adminFetchAllOrders(): Promise<OrderDetails[]> {
         status: o.status || 'pending',
         notes: o.notes || '',
         couponCode: o.coupon_code || '',
-        createdAt: o.created_at,
+        createdAt: o.created_at
+          ? new Date(o.created_at).toLocaleDateString('en-GB', {
+              day: 'numeric',
+              month: 'short',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+            })
+          : 'Recent',
         updatedAt: o.updated_at,
         items: (o.order_items || []).map((it: any) => ({
+          id: it.id,
+          productId: it.product_id,
           product: {
             id: it.product_id,
-            name: it.product_name,
-            price: Number(it.price || 0),
+            name: it.product_name || 'Item',
+            price: Number(it.unit_price || it.price || 0),
             image: it.product_image || '',
-            sizes: [it.size || 'L'],
+            sizes: [it.selected_size || it.size || 'L'],
           } as any,
-          selectedSize: it.size || 'L',
+          selectedSize: it.selected_size || it.size || 'L',
           quantity: Number(it.quantity || 1),
         })),
       }));
+
+      // Merge with any local orders that might have been saved in browser
+      const local = getLocalOrders();
+      const existingIds = new Set(mapped.map((m) => m.orderId));
+      for (const loc of local) {
+        if (!existingIds.has(loc.orderId)) {
+          mapped.push(loc);
+        }
+      }
       return mapped;
     }
   } catch (err) {
@@ -922,10 +883,53 @@ export async function adminFetchAllOrders(): Promise<OrderDetails[]> {
 
 export async function adminFetchAllCustomers(): Promise<Customer[]> {
   try {
-    return getLocalCustomers();
-  } catch {
-    return [];
+    const { data, error } = await supabase
+      .from('customers')
+      .select('*')
+      .order('last_order_date', { ascending: false });
+
+    if (!error && Array.isArray(data) && data.length > 0) {
+      const mapped: Customer[] = data.map((c: any) => ({
+        id: c.id || `cust-${c.phone}`,
+        phone: c.phone || '',
+        name: c.name || 'Shopper',
+        email: c.email || '',
+        address: c.address || '',
+        city: c.city || 'Inside Dhaka',
+        district: c.district || '',
+        thana: c.thana || '',
+        totalOrders: Number(c.total_orders ?? 1),
+        totalSpent: Number(c.total_spent ?? 0),
+        lastOrderDate: c.last_order_date
+          ? new Date(c.last_order_date).toLocaleDateString('en-GB', {
+              day: 'numeric',
+              month: 'short',
+              year: 'numeric',
+            })
+          : 'Recent',
+        isBlocked: Boolean(c.is_blocked),
+        adminNotes: c.admin_notes || '',
+        createdAt: c.created_at,
+        updatedAt: c.updated_at,
+      }));
+
+      // Merge with any local customers synthesised from browser orders
+      const local = getLocalCustomers();
+      const existingPhones = new Set(mapped.map((m) => m.phone));
+      for (const loc of local) {
+        if (loc.phone && !existingPhones.has(loc.phone)) {
+          mapped.push(loc);
+        }
+      }
+      try {
+        localStorage.setItem('haybah_admin_customers', JSON.stringify(mapped));
+      } catch {}
+      return mapped;
+    }
+  } catch (err) {
+    console.warn('Supabase fetch customers note:', err);
   }
+  return getLocalCustomers();
 }
 
 export async function adminFetchAllCoupons(): Promise<Coupon[]> {

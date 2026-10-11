@@ -37,7 +37,7 @@ import { AdminNotification, NotificationType } from '../components/AdminNotifica
 import { useShop } from '../../context/ShopContext';
 
 export const ProductsView: React.FC = () => {
-  const { refreshStoreData } = useShop();
+  const { refreshStoreData, setProducts: setGlobalProducts } = useShop();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -192,6 +192,17 @@ export const ProductsView: React.FC = () => {
       tag: editingProduct.tag || '',
     });
 
+    // Instantly update global storefront products synchronously
+    setGlobalProducts((prev) => {
+      const idx = prev.findIndex((p) => p.id === prodId);
+      if (idx >= 0) {
+        const nextList = [...prev];
+        nextList[idx] = res.product;
+        return nextList;
+      }
+      return [res.product, ...prev];
+    });
+
     setIsModalOpen(false);
     setEditingProduct(null);
     setIsSaving(false);
@@ -217,7 +228,10 @@ export const ProductsView: React.FC = () => {
 
   const handleDelete = async () => {
     if (!deleteTargetId) return;
-    const res = await remoteDeleteProduct(deleteTargetId);
+    const targetId = deleteTargetId;
+    // Instantly remove from global storefront products synchronously
+    setGlobalProducts((prev) => prev.filter((p) => p.id !== targetId));
+    const res = await remoteDeleteProduct(targetId);
     setDeleteTargetId(null);
     await loadData();
     await refreshStoreData();
@@ -471,7 +485,23 @@ export const ProductsView: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filteredProducts.map((p) => (
+              {loading ? (
+                <tr>
+                  <td colSpan={8} className="p-12 text-center text-gray-500">
+                    <Loader2 className="w-7 h-7 text-[#D4AF37] animate-spin mx-auto mb-2" />
+                    <span className="font-bold text-xs uppercase tracking-wider">Loading products inventory...</span>
+                  </td>
+                </tr>
+              ) : filteredProducts.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="p-12 text-center text-gray-400">
+                    <Package className="w-10 h-10 text-gray-300 mx-auto mb-2" />
+                    <p className="font-bold text-sm text-gray-600">No products found</p>
+                    <p className="text-xs text-gray-400 mt-1">Try resetting the filters or search query.</p>
+                  </td>
+                </tr>
+              ) : (
+                filteredProducts.map((p) => (
                 <tr
                   key={p.id}
                   className={`transition-all duration-300 ${
@@ -609,7 +639,7 @@ export const ProductsView: React.FC = () => {
                     </div>
                   </td>
                 </tr>
-              ))}
+              )))}
             </tbody>
           </table>
         </div>

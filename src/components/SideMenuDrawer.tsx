@@ -17,7 +17,8 @@ import {
   Compass,
   FileQuestion,
   Headphones,
-  ExternalLink
+  ExternalLink,
+  ShieldCheck,
 } from 'lucide-react';
 import { HaybahLogo } from './HaybahLogo';
 import { CATEGORIES } from '../data/mockData';
@@ -365,6 +366,28 @@ export const SideMenuDrawer: React.FC = () => {
                     <span>FAQs</span>
                   </div>
                   <ChevronRight className="w-3.5 h-3.5 text-gray-300 group-hover:translate-x-0.5 transition-all" />
+                </button>
+
+                {/* Admin Console Direct Link */}
+                <button
+                  type="button"
+                  onClick={() =>
+                    handleLinkClick(() => {
+                      window.history.pushState({}, '', '/admin');
+                      navigateTo('admin');
+                    })
+                  }
+                  className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl font-semibold text-xs sm:text-sm text-[#06201A] hover:bg-[#FAF7EC] transition-all group border border-[#D4AF37]/30 mt-2"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-7 h-7 rounded-lg bg-[#06201A] flex items-center justify-center text-[#D4AF37]">
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                    </div>
+                    <span className="font-bold text-[#06201A]">Admin Panel</span>
+                  </div>
+                  <span className="text-[10px] font-black uppercase text-[#AA820A] bg-[#D4AF37]/20 px-2 py-0.5 rounded-full">
+                    Console
+                  </span>
                 </button>
               </div>
             )}

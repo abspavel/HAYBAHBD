@@ -38,13 +38,25 @@ export const AccountView: React.FC = () => {
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setIsTrackOrderModalOpen(true)}
-            className="px-5 py-2.5 rounded-full bg-[#06201A] hover:bg-[#0B2B22] text-[#D4AF37] font-bold text-xs uppercase tracking-wider transition-all"
-          >
-            Track An Order
-          </button>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <button
+              type="button"
+              onClick={() => setIsTrackOrderModalOpen(true)}
+              className="px-5 py-2.5 rounded-full bg-[#06201A] hover:bg-[#0B2B22] text-[#D4AF37] font-bold text-xs uppercase tracking-wider transition-all cursor-pointer"
+            >
+              Track An Order
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                window.history.pushState({}, '', '/admin');
+                navigateTo('admin');
+              }}
+              className="px-5 py-2.5 rounded-full bg-[#FAF7EC] hover:bg-[#F3ECCE] text-[#AA820A] border border-[#D4AF37]/50 font-bold text-xs uppercase tracking-wider transition-all cursor-pointer"
+            >
+              Admin Panel
+            </button>
+          </div>
         </div>
       </div>
 

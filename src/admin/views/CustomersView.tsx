@@ -12,6 +12,7 @@ import {
   Calendar,
   X,
   CreditCard,
+  Loader2,
 } from 'lucide-react';
 import { Customer, OrderDetails } from '../../types';
 import { adminFetchAllCustomers, adminFetchAllOrders } from '../../services/supabaseService';
@@ -211,7 +212,22 @@ export const CustomersView: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filteredCustomers.map((cust) => {
+              {loading ? (
+                <tr>
+                  <td colSpan={7} className="p-12 text-center text-gray-500">
+                    <Loader2 className="w-7 h-7 text-[#D4AF37] animate-spin mx-auto mb-2" />
+                    <span className="font-bold text-xs uppercase tracking-wider">Loading customers...</span>
+                  </td>
+                </tr>
+              ) : filteredCustomers.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="p-12 text-center text-gray-400">
+                    <Users className="w-10 h-10 text-gray-300 mx-auto mb-2" />
+                    <p className="font-bold text-sm text-gray-600">No customers found</p>
+                  </td>
+                </tr>
+              ) : (
+                filteredCustomers.map((cust) => {
                 const cleanPhone = cust.phone.replace(/[^0-9]/g, '');
                 const bdBareNumber = cleanPhone.slice(-10);
                 const whatsappUrl = `https://wa.me/880${bdBareNumber}?text=${encodeURIComponent(
@@ -308,7 +324,7 @@ export const CustomersView: React.FC = () => {
                     </td>
                   </tr>
                 );
-              })}
+              }))}
             </tbody>
           </table>
         </div>

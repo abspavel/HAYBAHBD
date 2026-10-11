@@ -26,7 +26,7 @@ import { AdminNotification, NotificationType } from '../components/AdminNotifica
 import { useShop } from '../../context/ShopContext';
 
 export const CategoriesView: React.FC = () => {
-  const { refreshStoreData } = useShop();
+  const { refreshStoreData, setCategories: setGlobalCategories } = useShop();
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingCategory, setEditingCategory] = useState<Partial<CategoryItem> | null>(null);
@@ -114,11 +114,21 @@ export const CategoriesView: React.FC = () => {
       isActive: editingCategory.isActive ?? true,
     });
 
+    // Instantly update storefront, menu bar, and all components synchronously
+    setGlobalCategories((prev) => {
+      const idx = prev.findIndex((c) => c.id === catId);
+      if (idx >= 0) {
+        const nextList = [...prev];
+        nextList[idx] = res.category;
+        return nextList;
+      }
+      return [...prev, res.category];
+    });
+
     setIsModalOpen(false);
     setEditingCategory(null);
     setIsSaving(false);
     await loadCategories();
-    // Instantly update storefront, menu bar, and all components
     await refreshStoreData();
 
     setHighlightedId(catId);
@@ -140,6 +150,8 @@ export const CategoriesView: React.FC = () => {
 
   const handleDelete = async () => {
     if (!deleteTargetId) return;
+    // Instantly remove from global categories synchronously
+    setGlobalCategories((prev) => prev.filter((c) => c.id !== deleteTargetId));
     const res = await remoteDeleteCategory(deleteTargetId);
     setDeleteTargetId(null);
     await loadCategories();
@@ -161,6 +173,9 @@ export const CategoriesView: React.FC = () => {
 
   const toggleActive = async (cat: CategoryItem) => {
     const nextActive = !cat.isActive;
+    setGlobalCategories((prev) =>
+      prev.map((c) => (c.id === cat.id ? { ...c, isActive: nextActive } : c))
+    );
     await remoteSaveCategory({ ...cat, isActive: nextActive });
     await loadCategories();
     await refreshStoreData();
@@ -234,8 +249,16 @@ export const CategoriesView: React.FC = () => {
       </div>
 
       {/* Categories Grid (Matching 4-column gold look) */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3.5 sm:gap-4">
-        {categories.map((cat, idx) => (
+      {loading ? (
+        <div className="bg-white rounded-3xl p-12 border border-gray-200 text-center flex flex-col items-center justify-center gap-3">
+          <Loader2 className="w-8 h-8 text-[#D4AF37] animate-spin" />
+          <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+            Loading Categories...
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3.5 sm:gap-4">
+          {categories.map((cat, idx) => (
           <div
             key={cat.id}
             className={`bg-white rounded-2xl border p-3 flex flex-col justify-between transition-all duration-200 ${
@@ -320,6 +343,7 @@ export const CategoriesView: React.FC = () => {
           </div>
         ))}
       </div>
+    )}
 
       {/* Add / Edit Category Modal */}
       {isModalOpen && editingCategory && (

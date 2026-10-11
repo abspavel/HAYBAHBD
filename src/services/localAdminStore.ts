@@ -10,7 +10,68 @@ import {
   OrderStatus,
 } from '../types';
 import { ALL_PRODUCTS, CATEGORIES } from '../data/mockData';
-import { DEFAULT_BANNERS, DEFAULT_SETTINGS } from './supabaseService';
+
+// Default banners fallback - High-res streetwear banner imagery
+export const DEFAULT_BANNERS: HeroBanner[] = [
+  {
+    id: 'banner-1',
+    badge: 'No #1 Streetwear Brand',
+    title: 'URBAN EVOLUTION 2026',
+    subtitle: 'PREMIUM DROPS & EXCLUSIVE CUTS',
+    tagline: 'Engineered for those who lead with energy and edge',
+    actionText: 'EXPLORE COLLECTION',
+    actionLink: 'shop',
+    categorySlug: 'y2k-jersey',
+    image: 'https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=1600&q=85',
+    bgColor: 'from-[#06201A] via-[#0B2B22] to-[#041511]',
+    accentColor: '#D4AF37',
+    sortOrder: 1,
+    isActive: true,
+  },
+  {
+    id: 'banner-2',
+    badge: 'Winter Capsule Collection',
+    title: 'HEAVYWEIGHT HOODIES',
+    subtitle: '420 GSM FRENCH TERRY & CORD SHACKETS',
+    tagline: 'Signature warmth with architectural oversized draping',
+    actionText: 'SHOP WINTER DROPS',
+    actionLink: 'category',
+    categorySlug: 'premium-hoodie',
+    image: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1600&q=85',
+    bgColor: 'from-[#091E19] via-[#102B23] to-[#061814]',
+    accentColor: '#E8CE7A',
+    sortOrder: 2,
+    isActive: true,
+  },
+  {
+    id: 'banner-3',
+    badge: 'Limited Edition Drop',
+    title: 'Y2K MOTOR JERSEYS',
+    subtitle: 'RETRO ATHLETIC APPAREL IN BANGLADESH',
+    tagline: 'Authentic mesh with double stitched number graphics',
+    actionText: 'VIEW JERSEYS',
+    actionLink: 'category',
+    categorySlug: 'premium-drop-shoulders',
+    image: 'https://images.unsplash.com/photo-1523381294911-8d3cead13475?auto=format&fit=crop&w=1600&q=85',
+    bgColor: 'from-[#12241D] via-[#0B2B22] to-[#051510]',
+    accentColor: '#D4AF37',
+    sortOrder: 3,
+    isActive: true,
+  },
+];
+
+// Default site settings
+export const DEFAULT_SETTINGS: SiteSettings = {
+  brandName: 'HAYBAH',
+  helpline: '+880 1642-247530',
+  helplineHours: '(11:00 AM – 08:00 PM)',
+  email: 'haybahclothing1@gmail.com',
+  whatsapp: '+8801642247530',
+  marqueeText:
+    'FREE SHIPPING ON ORDERS OVER ৳2000! | CASH ON DELIVERY AVAILABLE ALL OVER BANGLADESH | 7-DAY EXCHANGE POLICY',
+  shippingInsideDhaka: 80,
+  shippingOutsideDhaka: 120,
+};
 
 // Storage keys
 const STORAGE_KEYS = {

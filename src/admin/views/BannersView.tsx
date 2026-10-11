@@ -34,7 +34,7 @@ import { AdminNotification, NotificationType } from '../components/AdminNotifica
 import { useShop } from '../../context/ShopContext';
 
 export const BannersView: React.FC = () => {
-  const { refreshStoreData } = useShop();
+  const { refreshStoreData, setHeroBanners: setGlobalBanners } = useShop();
   const [banners, setBanners] = useState<HeroBanner[]>([]);
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -214,6 +214,17 @@ SELECT 'SUCCESS: HAYBAH Supabase Cloud Permissions & Realtime Sync are 100% Acti
       isActive: editingBanner.isActive ?? true,
     });
 
+    // Instantly update global storefront banners synchronously
+    setGlobalBanners((prev) => {
+      const idx = prev.findIndex((b) => b.id === bannerId);
+      if (idx >= 0) {
+        const nextList = [...prev];
+        nextList[idx] = res.banner;
+        return nextList;
+      }
+      return [...prev, res.banner];
+    });
+
     setIsModalOpen(false);
     setEditingBanner(null);
     setIsSaving(false);
@@ -237,7 +248,10 @@ SELECT 'SUCCESS: HAYBAH Supabase Cloud Permissions & Realtime Sync are 100% Acti
 
   const handleDelete = async () => {
     if (!deleteTargetId) return;
-    const res = await remoteDeleteBanner(deleteTargetId);
+    const targetId = deleteTargetId;
+    // Instantly remove from global storefront banners synchronously
+    setGlobalBanners((prev) => prev.filter((b) => b.id !== targetId));
+    const res = await remoteDeleteBanner(targetId);
     setDeleteTargetId(null);
     await loadData();
     await refreshStoreData();
@@ -258,8 +272,12 @@ SELECT 'SUCCESS: HAYBAH Supabase Cloud Permissions & Realtime Sync are 100% Acti
 
   const toggleActive = async (banner: HeroBanner) => {
     const nextActive = !banner.isActive;
+    setGlobalBanners((prev) =>
+      prev.map((b) => (b.id === banner.id ? { ...b, isActive: nextActive } : b))
+    );
     await remoteSaveBanner({ ...banner, isActive: nextActive });
     await loadData();
+    await refreshStoreData();
   };
 
   const moveOrder = async (index: number, direction: 'up' | 'down') => {
@@ -294,7 +312,7 @@ SELECT 'SUCCESS: HAYBAH Supabase Cloud Permissions & Realtime Sync are 100% Acti
         <div>
           <h1 className="text-xl sm:text-2xl font-black text-[#06201A] uppercase tracking-tight flex items-center gap-2">
             <ImageIcon className="w-6 h-6 text-[#D4AF37]" />
-            <span>Hero Image Banners</span>
+            <span>Hero Image Banners ({banners.length})</span>
           </h1>
           <p className="text-xs text-gray-500 mt-1">
             হোমপেজের মূল স্লাইডারে প্রদর্শিত ব্যানার ছবি। এতে কোনো টেক্সট বা বাটন থাকবে না—সরাসরি গ্যালারি থেকে ছবি আপলোড করুন।
@@ -413,8 +431,41 @@ SELECT 'SUCCESS: HAYBAH Supabase Cloud Permissions & Realtime Sync are 100% Acti
       </div>
 
       {/* Banner Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {banners.map((b, idx) => (
+      {loading ? (
+        <div className="bg-white rounded-3xl p-12 border border-gray-200 text-center flex flex-col items-center justify-center gap-3">
+          <Loader2 className="w-8 h-8 text-[#D4AF37] animate-spin" />
+          <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+            Loading Hero Banners...
+          </p>
+        </div>
+      ) : banners.length === 0 ? (
+        <div className="bg-white rounded-3xl p-12 border border-dashed border-gray-300 text-center flex flex-col items-center justify-center gap-3">
+          <ImageIcon className="w-12 h-12 text-gray-300" />
+          <h3 className="font-bold text-sm text-[#06201A]">কোনো ব্যানার নেই</h3>
+          <p className="text-xs text-gray-500 max-w-sm">
+            হোমপেজের মূল স্লাইডারে ছবি প্রদর্শনের জন্য নতুন ব্যানার আপলোড করুন।
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              setEditingBanner({
+                title: '',
+                categorySlug: '',
+                actionLink: 'category',
+                image: '',
+                sortOrder: 1,
+                isActive: true,
+              });
+              setIsModalOpen(true);
+            }}
+            className="px-5 py-2.5 rounded-xl bg-[#06201A] text-[#D4AF37] font-bold text-xs uppercase"
+          >
+            Upload First Banner
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {banners.map((b, idx) => (
           <div
             key={b.id}
             className={`bg-white rounded-3xl border overflow-hidden flex flex-col justify-between transition-all duration-200 ${
@@ -531,6 +582,7 @@ SELECT 'SUCCESS: HAYBAH Supabase Cloud Permissions & Realtime Sync are 100% Acti
           </div>
         ))}
       </div>
+    )}
 
       {/* Add / Edit Banner Modal */}
       {isModalOpen && editingBanner && (

@@ -224,7 +224,14 @@ export const OrdersView: React.FC<OrdersViewProps> = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filteredOrders.length === 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan={8} className="p-12 text-center text-gray-500">
+                    <RefreshCw className="w-6 h-6 text-[#D4AF37] animate-spin mx-auto mb-2" />
+                    <span className="font-bold text-xs uppercase tracking-wider">Loading orders...</span>
+                  </td>
+                </tr>
+              ) : filteredOrders.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="p-10 text-center text-gray-400">
                     No orders matching this filter

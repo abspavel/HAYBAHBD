@@ -55,6 +55,9 @@ interface ShopContextType {
   siteSettings: SiteSettings;
   loadingStoreData: boolean;
   refreshStoreData: () => Promise<void>;
+  setCategories: React.Dispatch<React.SetStateAction<CategoryItem[]>>;
+  setProducts: React.Dispatch<React.SetStateAction<Product[]>>;
+  setHeroBanners: React.Dispatch<React.SetStateAction<HeroBanner[]>>;
 
   // Actions
   setSearchQuery: (query: string) => void;
@@ -559,6 +562,9 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         siteSettings,
         loadingStoreData,
         refreshStoreData,
+        setCategories,
+        setProducts,
+        setHeroBanners,
         setSearchQuery,
         setIsCartOpen,
         setIsSideMenuOpen,
