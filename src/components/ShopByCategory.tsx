@@ -7,13 +7,9 @@ export const ShopByCategory: React.FC = () => {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
 
-  // Get active categories matching the 12 signature categories in the reference
+  // Get all active categories (ordered by sortOrder)
   const allCategories = categories && categories.length > 0 ? categories : CATEGORIES;
-  
-  // The 12 categories in the exact order shown in the reference screenshot
-  const displayedCategories = allCategories
-    .filter((c) => c.isActive !== false)
-    .slice(0, 12);
+  const displayedCategories = allCategories.filter((c) => c.isActive !== false);
 
   const handleCategoryClick = (slug: string, id: string) => {
     setActiveId(id);

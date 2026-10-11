@@ -77,17 +77,16 @@ export const ListingView: React.FC<ListingViewProps> = ({ viewType }) => {
     let list = pageConfig.items;
 
     if (activeCategoryFilter !== 'ALL' && viewType !== 'category') {
+      const filterLower = activeCategoryFilter.toLowerCase();
       list = list.filter((p) => {
-        const catLower = p.category.toLowerCase();
-        if (activeCategoryFilter === 'HOODIE') return catLower.includes('hoodie');
-        if (activeCategoryFilter === 'SWEATSHIRT') return catLower.includes('sweatshirt');
-        if (activeCategoryFilter === 'SHACKET') return catLower.includes('shacket');
-        if (activeCategoryFilter === 'Y2K JERSEY') return catLower.includes('jersey');
-        if (activeCategoryFilter === 'DROP SHOULDER') return catLower.includes('drop');
-        if (activeCategoryFilter === 'CARGO & PANTS') return catLower.includes('cargo') || catLower.includes('sweatpants');
-        if (activeCategoryFilter === 'ETHNIC & MODEST') return catLower.includes('panjabi') || catLower.includes('abaya') || catLower.includes('hijab') || catLower.includes('thobe');
-        if (activeCategoryFilter === 'HEADWEAR') return catLower.includes('head') || catLower.includes('bandana');
-        return true;
+        const catLower = (p.category || '').toLowerCase();
+        const catSlug = (p.categorySlug || '').toLowerCase();
+        return (
+          catLower === filterLower ||
+          catLower.includes(filterLower) ||
+          filterLower.includes(catLower) ||
+          catSlug.includes(filterLower.replace(/[^a-z0-9]+/g, '-'))
+        );
       });
     }
 
@@ -99,17 +98,21 @@ export const ListingView: React.FC<ListingViewProps> = ({ viewType }) => {
     });
   }, [pageConfig.items, activeCategoryFilter, sortBy, viewType]);
 
-  const categoryTabs = [
-    'ALL',
-    'HOODIE',
-    'SWEATSHIRT',
-    'SHACKET',
-    'Y2K JERSEY',
-    'DROP SHOULDER',
-    'CARGO & PANTS',
-    'ETHNIC & MODEST',
-    'HEADWEAR',
-  ];
+  const categoryTabs = useMemo(() => {
+    const activeCats = allCats.filter((c) => c.isActive !== false);
+    if (activeCats.length === 0) {
+      return [
+        'ALL',
+        'HOODIE',
+        'SWEATSHIRT',
+        'SHACKET',
+        'Y2K JERSEY',
+        'DROP SHOULDER',
+        'CARGO & PANTS',
+      ];
+    }
+    return ['ALL', ...activeCats.map((c) => c.name.toUpperCase())];
+  }, [allCats]);
 
   return (
     <div className="max-w-7xl mx-auto px-3 sm:px-4 pt-3 sm:pt-4 pb-14">

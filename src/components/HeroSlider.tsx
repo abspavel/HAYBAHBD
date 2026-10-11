@@ -59,6 +59,14 @@ export const HeroSlider: React.FC = () => {
   const slides: BannerSlide[] =
     activeBanners.length > 0 ? activeBanners : DEFAULT_IMAGE_BANNERS;
 
+  // Ensure currentIndex stays within bounds if slides length changes (e.g. banners deleted or updated in admin)
+  useEffect(() => {
+    if (slides.length > 0 && currentIndex >= slides.length) {
+      setCurrentIndex(0);
+      setPrevIndex(null);
+    }
+  }, [slides.length, currentIndex]);
+
   // Auto-transition: smoothly crossfades between banners every 5 seconds
   useEffect(() => {
     if (slides.length <= 1 || isHovered) return;

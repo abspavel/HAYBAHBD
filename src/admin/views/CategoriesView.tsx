@@ -13,14 +13,20 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { CategoryItem } from '../../types';
-import { adminFetchAllCategories } from '../../services/supabaseService';
-import { saveLocalCategory, deleteLocalCategory, playAdminChime } from '../../services/localAdminStore';
+import {
+  adminFetchAllCategories,
+  remoteSaveCategory,
+  remoteDeleteCategory,
+} from '../../services/supabaseService';
+import { playAdminChime, saveLocalCategory, getLocalProducts, saveLocalProduct } from '../../services/localAdminStore';
 import { supabase } from '../../lib/supabase';
 import { ImageUploader } from '../components/ImageUploader';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { AdminNotification, NotificationType } from '../components/AdminNotification';
+import { useShop } from '../../context/ShopContext';
 
 export const CategoriesView: React.FC = () => {
+  const { refreshStoreData } = useShop();
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingCategory, setEditingCategory] = useState<Partial<CategoryItem> | null>(null);
@@ -69,85 +75,95 @@ export const CategoriesView: React.FC = () => {
     const slug = editingCategory.slug?.trim() || generateSlug(editingCategory.name);
     const catId = editingCategory.id || `cat-${slug}`;
 
-    const payload = {
-      id: catId,
-      name: editingCategory.name.trim(),
-      slug: slug,
-      image: editingCategory.image || 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=800&q=80',
-      badge: editingCategory.badge || '',
-      item_count: editingCategory.itemCount ?? 2,
-      sort_order: editingCategory.sortOrder ?? categories.length + 1,
-      is_active: editingCategory.isActive ?? true,
-      updated_at: new Date().toISOString(),
-    };
+    // If an existing category is renamed, cascade update its products
+    const existing = categories.find((c) => c.id === catId);
+    if (existing && (existing.name !== editingCategory.name.trim() || existing.slug !== slug)) {
+      try {
+        const allLocalProds = getLocalProducts();
+        let prodsChanged = false;
+        allLocalProds.forEach((p) => {
+          if (p.category === existing.name || p.categorySlug === existing.slug) {
+            p.category = editingCategory.name!.trim();
+            p.categorySlug = slug;
+            saveLocalProduct(p);
+            prodsChanged = true;
+          }
+        });
+        if (prodsChanged) {
+          supabase
+            .from('products')
+            .update({ category: editingCategory.name.trim(), category_slug: slug })
+            .or(`category.eq.${existing.name},category_slug.eq.${existing.slug}`)
+            .then(() => {});
+        }
+      } catch (err) {
+        console.warn('Cascade category rename note:', err);
+      }
+    }
 
-    // 1. Immediately save locally
-    saveLocalCategory({
+    const res = await remoteSaveCategory({
       id: catId,
       name: editingCategory.name.trim(),
       slug: slug,
-      image: editingCategory.image || 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=800&q=80',
+      image:
+        editingCategory.image ||
+        'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=800&q=80',
       badge: editingCategory.badge || '',
       itemCount: editingCategory.itemCount ?? 2,
       sortOrder: editingCategory.sortOrder ?? categories.length + 1,
       isActive: editingCategory.isActive ?? true,
     });
 
-    // 2. Remote sync in background
-    try {
-      await supabase.from('categories').upsert(payload);
-    } catch (err) {
-      console.warn('Upsert category remote note:', err);
-    }
-
     setIsModalOpen(false);
     setEditingCategory(null);
     setIsSaving(false);
     await loadCategories();
+    // Instantly update storefront, menu bar, and all components
+    await refreshStoreData();
 
     setHighlightedId(catId);
     setTimeout(() => setHighlightedId(null), 3000);
     playAdminChime('success');
-    setNotification({
-      message: '✓ ক্যাটাগরি সফলভাবে সংরক্ষিত হয়েছে! (Category Saved Successfully)',
-      type: 'success',
-    });
+
+    if (res.isRlsError) {
+      setNotification({
+        message: '⚠️ ক্যাটাগরি এই ডিভাইসে সেভ হয়েছে, তবে Supabase RLS এর কারণে সব ডিভাইসে সিঙ্ক করতে ব্যানার পেজের SQL রান করুন।',
+        type: 'error',
+      });
+    } else {
+      setNotification({
+        message: '✓ ক্যাটাগরি সফলভাবে সংরক্ষিত ও ক্লাউডে আপলোড হয়েছে! (মেনুবার ও সকল পেজে লাইভ)',
+        type: 'success',
+      });
+    }
   };
 
   const handleDelete = async () => {
     if (!deleteTargetId) return;
-    deleteLocalCategory(deleteTargetId);
-    try {
-      await supabase.from('categories').delete().eq('id', deleteTargetId);
-    } catch (err) {
-      console.warn('Delete category error:', err);
-    }
+    const res = await remoteDeleteCategory(deleteTargetId);
     setDeleteTargetId(null);
     await loadCategories();
+    await refreshStoreData();
     playAdminChime('delete');
-    setNotification({
-      message: '✓ ক্যাটাগরি মুছে ফেলা হয়েছে! (Category Removed)',
-      type: 'delete',
-    });
+
+    if (res.isRlsError) {
+      setNotification({
+        message: '⚠️ ক্যাটাগরি লোকালি ডিলিট হয়েছে। ক্লাউডে আপডেট করতে SQL রান করুন।',
+        type: 'error',
+      });
+    } else {
+      setNotification({
+        message: '✓ ক্যাটাগরি মুছে ফেলা হয়েছে! (মেনুবার ও সকল পেজে আপডেট)',
+        type: 'delete',
+      });
+    }
   };
 
   const toggleActive = async (cat: CategoryItem) => {
     const nextActive = !cat.isActive;
-    saveLocalCategory({ id: cat.id, isActive: nextActive });
-    try {
-      await supabase
-        .from('categories')
-        .update({ is_active: nextActive, updated_at: new Date().toISOString() })
-        .eq('id', cat.id);
-    } catch (e) {
-      console.warn(e);
-    }
+    await remoteSaveCategory({ ...cat, isActive: nextActive });
     await loadCategories();
-    playAdminChime('success');
-    setNotification({
-      message: `✓ "${cat.name}" - ${nextActive ? 'সক্রিয়' : 'নিষ্ক্রিয়'} করা হয়েছে!`,
-      type: 'success',
-    });
+    await refreshStoreData();
   };
 
   const moveOrder = async (index: number, direction: 'up' | 'down') => {
@@ -180,6 +196,7 @@ export const CategoriesView: React.FC = () => {
       console.warn('Reorder error:', e);
     }
     await loadCategories();
+    await refreshStoreData();
   };
 
   return (

@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+# Disallow admin routes from search indexing
+Disallow: /admin
+Disallow: /admin/
+Disallow: /admin-login
+
+Sitemap: https://haybahbd.com/sitemap.xml

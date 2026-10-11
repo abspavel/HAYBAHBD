@@ -20,28 +20,28 @@ export const NewArrivalSection: React.FC = () => {
           </div>
         </div>
 
-        {/* Wide Banner Showcase matching Screenshot 5 */}
-        <div className="relative rounded-2xl overflow-hidden bg-gradient-to-r from-[#06201A] via-[#0E342B] to-[#041511] text-white p-5 sm:p-8 mb-5 border border-[#D4AF37]/30">
+        {/* Wide Banner Showcase */}
+        <div className="relative rounded-2xl overflow-hidden bg-gradient-to-r from-[#06201A] via-[#0E342B] to-[#041511] text-white p-5 sm:p-8 mb-5 border border-[#D4AF37]/30 shadow-md">
           <div className="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
             <div>
               <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#D4AF37] text-[#06201A] text-[10px] font-extrabold uppercase tracking-widest mb-1.5">
                 <Sparkles className="w-3 h-3" />
-                <span>FRESH DROP 2026</span>
+                <span>NEW ARRIVALS 2026</span>
               </div>
-              <h3 className="text-xl sm:text-2xl font-black uppercase font-brand text-white">
-                Y2K JERSEY & URBAN CASUALS
+              <h3 className="text-xl sm:text-2xl font-black uppercase font-brand text-white tracking-wide">
+                NEW ARRIVALS COLLECTION
               </h3>
-              <p className="text-xs text-gray-300 mt-0.5">
-                Up to 35% discount on the latest seasonal arrivals. Limited pieces available.
+              <p className="text-xs text-gray-300 mt-1 max-w-xl">
+                Discover our latest seasonal drops and newly arrived premium streetwear collection. Fresh styles added regularly.
               </p>
             </div>
 
             <button
               type="button"
               onClick={() => navigateTo('new-arrival')}
-              className="shrink-0 px-5 py-2 rounded-full bg-[#D4AF37] hover:bg-[#B8962E] text-[#06201A] font-bold text-xs uppercase tracking-wider transition-all transform hover:scale-105 active:scale-95"
+              className="shrink-0 px-6 py-2.5 rounded-full bg-[#D4AF37] hover:bg-[#B8962E] text-[#06201A] font-bold text-xs uppercase tracking-wider transition-all transform hover:scale-105 active:scale-95 shadow-sm"
             >
-              Shop New Drop
+              Shop New Arrivals
             </button>
           </div>
         </div>

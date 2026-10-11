@@ -18,15 +18,26 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { Product, CategoryItem } from '../../types';
-import { adminFetchAllProducts, adminFetchAllCategories } from '../../services/supabaseService';
-import { saveLocalProduct, deleteLocalProduct, playAdminChime } from '../../services/localAdminStore';
+import {
+  adminFetchAllProducts,
+  adminFetchAllCategories,
+  remoteSaveProduct,
+  remoteDeleteProduct,
+} from '../../services/supabaseService';
+import {
+  playAdminChime,
+  saveLocalProduct,
+  deleteLocalProduct,
+} from '../../services/localAdminStore';
 import { supabase } from '../../lib/supabase';
 import { ImageUploader } from '../components/ImageUploader';
 import { StatusBadge } from '../components/StatusBadge';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { AdminNotification, NotificationType } from '../components/AdminNotification';
+import { useShop } from '../../context/ShopContext';
 
 export const ProductsView: React.FC = () => {
+  const { refreshStoreData } = useShop();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -148,41 +159,8 @@ export const ProductsView: React.FC = () => {
     const mainImage = galleryImages[0];
     const stockQty = Number(editingProduct.stockQuantity ?? 50);
 
-    const payload = {
-      id: prodId,
-      name: editingProduct.name.trim(),
-      slug: slug,
-      category: editingProduct.category,
-      category_slug: matchedCategory?.slug || editingProduct.categorySlug || slug,
-      price: Number(editingProduct.price || 0),
-      original_price: editingProduct.originalPrice ? Number(editingProduct.originalPrice) : null,
-      discount_percent: editingProduct.discountPercent || 0,
-      is_hot: Boolean(editingProduct.isHot),
-      is_flash_sale: Boolean(editingProduct.isFlashSale),
-      is_featured: Boolean(editingProduct.isFeatured),
-      is_new_arrival: Boolean(editingProduct.isNewArrival),
-      is_active: editingProduct.isActive ?? true,
-      rating: Number(editingProduct.rating || 5.0),
-      reviews_count: Number(editingProduct.reviewsCount || 12),
-      image: mainImage,
-      gallery: galleryImages,
-      description: editingProduct.description || '',
-      short_description: editingProduct.shortDescription || '',
-      details: editingProduct.details || '',
-      sizes: editingProduct.sizes && editingProduct.sizes.length ? editingProduct.sizes : ['M', 'L', 'XL', 'XXL'],
-      colors: editingProduct.colors || [],
-      fabric: editingProduct.fabric || '',
-      gsm: editingProduct.gsm ? Number(editingProduct.gsm) : null,
-      fit: editingProduct.fit || '',
-      sku: editingProduct.sku || `HYB-${prodId}`,
-      in_stock: stockQty > 0 && (editingProduct.inStock ?? true),
-      stock_quantity: stockQty,
-      tag: editingProduct.tag || '',
-      updated_at: new Date().toISOString(),
-    };
 
-    // 1. Immediately save to local persistent store so changes NEVER get lost
-    saveLocalProduct({
+    const res = await remoteSaveProduct({
       id: prodId,
       name: editingProduct.name.trim(),
       slug: slug,
@@ -214,42 +192,48 @@ export const ProductsView: React.FC = () => {
       tag: editingProduct.tag || '',
     });
 
-    // 2. Also sync to Supabase remote database in the background
-    try {
-      await supabase.from('products').upsert(payload);
-    } catch (err) {
-      console.warn('Product remote save note:', err);
-    }
-
     setIsModalOpen(false);
     setEditingProduct(null);
     setIsSaving(false);
     await loadData();
+    await refreshStoreData();
 
     setHighlightedId(prodId);
     setTimeout(() => setHighlightedId(null), 3000);
     playAdminChime('success');
-    setNotification({
-      message: '✓ প্রোডাক্ট সফলভাবে সংরক্ষিত হয়েছে! (Product Saved Successfully)',
-      type: 'success',
-    });
+
+    if (res.isRlsError) {
+      setNotification({
+        message: '⚠️ প্রোডাক্ট এই ডিভাইসে সেভ হয়েছে, তবে Supabase RLS এর কারণে সব ডিভাইসে সিঙ্ক করতে ব্যানার পেজের SQL রান করুন।',
+        type: 'error',
+      });
+    } else {
+      setNotification({
+        message: '✓ প্রোডাক্ট সফলভাবে সংরক্ষিত ও ক্লাউডে আপলোড হয়েছে! (সকল ডিভাইসে লাইভ)',
+        type: 'success',
+      });
+    }
   };
 
   const handleDelete = async () => {
     if (!deleteTargetId) return;
-    deleteLocalProduct(deleteTargetId);
-    try {
-      await supabase.from('products').delete().eq('id', deleteTargetId);
-    } catch (e) {
-      console.warn(e);
-    }
+    const res = await remoteDeleteProduct(deleteTargetId);
     setDeleteTargetId(null);
     await loadData();
+    await refreshStoreData();
     playAdminChime('delete');
-    setNotification({
-      message: '✓ প্রোডাক্ট সফলভাবে মুছে ফেলা হয়েছে! (Product Deleted)',
-      type: 'delete',
-    });
+
+    if (res.isRlsError) {
+      setNotification({
+        message: '⚠️ প্রোডাক্ট লোকালি মুছে গেছে। ক্লাউডে আপডেট করতে ব্যানার পেজের SQL রান করুন।',
+        type: 'error',
+      });
+    } else {
+      setNotification({
+        message: '✓ প্রোডাক্ট সফলভাবে মুছে ফেলা হয়েছে! (সকল ডিভাইসে আপডেট)',
+        type: 'delete',
+      });
+    }
   };
 
   const handleDuplicate = (p: Product) => {
@@ -271,15 +255,7 @@ export const ProductsView: React.FC = () => {
   // Quick toggle active directly from table
   const handleToggleProductActive = async (p: Product) => {
     const nextActive = !p.isActive;
-    saveLocalProduct({ id: p.id, isActive: nextActive });
-    try {
-      await supabase
-        .from('products')
-        .update({ is_active: nextActive, updated_at: new Date().toISOString() })
-        .eq('id', p.id);
-    } catch (e) {
-      console.warn(e);
-    }
+    await remoteSaveProduct({ ...p, isActive: nextActive });
     await loadData();
     playAdminChime('success');
     setNotification({

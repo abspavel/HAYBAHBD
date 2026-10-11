@@ -1,6 +1,7 @@
 {
-  "name": "HAYBAH - Premium Streetwear",
+  "name": "HAYBAH - Premium Streetwear Bangladesh",
   "short_name": "HAYBAH",
+  "description": "বাংলাদেশে ছেলেদের প্রিমিয়াম ও আধুনিক পোশাকের অন্যতম সেরা ব্র্যান্ড।",
   "icons": [
     {
       "src": "/icon-192.png",
@@ -16,5 +17,6 @@
   "theme_color": "#06201A",
   "background_color": "#06201A",
   "display": "standalone",
-  "start_url": "/"
+  "start_url": "https://haybahbd.com/",
+  "scope": "https://haybahbd.com/"
 }

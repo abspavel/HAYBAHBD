@@ -25,6 +25,7 @@ import {
   saveLocalIncompleteOrder,
 } from '../services/localAdminStore';
 import { supabase } from '../lib/supabase';
+import { parseProductFromUrl } from '../utils/urlHelper';
 
 interface Toast {
   id: string;
@@ -132,19 +133,33 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   });
 
-  // Check URL pathname for /admin or /admin/login
+  // Check URL pathname for /admin, /product/:id, /p/:id, or query ?p=
   const [currentView, setCurrentView] = useState<ViewType>(() => {
     if (typeof window !== 'undefined') {
       const path = window.location.pathname.toLowerCase();
       if (path === '/admin' || path.startsWith('/admin/')) {
         return 'admin';
       }
+      if (path.startsWith('/product/') || path.startsWith('/p/')) {
+        return 'product-detail';
+      }
+      try {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('product') || params.get('p')) {
+          return 'product-detail';
+        }
+      } catch {}
     }
     return 'home';
   });
 
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(() => {
+    if (typeof window !== 'undefined') {
+      return parseProductFromUrl(ALL_PRODUCTS);
+    }
+    return null;
+  });
   const [searchQuery, setSearchQuery] = useState('');
 
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -163,7 +178,6 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Fetch live storefront data from Supabase
   const refreshStoreData = useCallback(async () => {
-    setLoadingStoreData(true);
     try {
       const [liveProds, liveCats, liveBanners, liveSettings] = await Promise.all([
         fetchLiveProducts(),
@@ -172,10 +186,27 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         fetchLiveSiteSettings(),
       ]);
 
-      if (liveProds && liveProds.length > 0) setProducts(liveProds);
-      if (liveCats && liveCats.length > 0) setCategories(liveCats);
-      if (liveBanners && liveBanners.length > 0) setHeroBanners(liveBanners);
-      if (liveSettings) setSiteSettings(liveSettings);
+      if (Array.isArray(liveProds) && liveProds.length > 0) {
+        setProducts(liveProds);
+
+        // If URL currently points to a product link, resolve product from liveProds
+        if (typeof window !== 'undefined') {
+          const matched = parseProductFromUrl(liveProds);
+          if (matched) {
+            setSelectedProduct(matched);
+            setCurrentView('product-detail');
+          }
+        }
+      }
+      if (Array.isArray(liveCats) && liveCats.length > 0) {
+        setCategories(liveCats);
+      }
+      if (Array.isArray(liveBanners)) {
+        setHeroBanners(liveBanners);
+      }
+      if (liveSettings) {
+        setSiteSettings(liveSettings);
+      }
     } catch (e) {
       console.warn('Storefront data sync warning:', e);
     } finally {
@@ -186,11 +217,50 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     refreshStoreData();
 
-    // Listen to browser forward/back buttons
+    // Supabase Realtime Subscription for cross-device live sync:
+    // When ANY device adds, edits, or deletes banners, categories, products, or settings,
+    // all connected devices receive the postgres change and update immediately.
+    const realtimeChannel = supabase
+      .channel('storefront-realtime-sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'hero_banners' }, () => {
+        refreshStoreData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, () => {
+        refreshStoreData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => {
+        refreshStoreData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'site_settings' }, () => {
+        refreshStoreData();
+      })
+      .subscribe();
+
+    // Polling interval (every 10 seconds) as reliable heartbeat sync across devices
+    const pollTimer = setInterval(() => {
+      refreshStoreData();
+    }, 10000);
+
+    // Sync immediately when device window / browser tab gains focus or wakes up
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        refreshStoreData();
+      }
+    };
+    window.addEventListener('focus', refreshStoreData);
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    // Listen to browser forward/back buttons & URL changes
     const handlePopState = () => {
       const path = window.location.pathname.toLowerCase();
       if (path === '/admin' || path.startsWith('/admin/')) {
         setCurrentView('admin');
+      } else if (path.startsWith('/product/') || path.startsWith('/p/')) {
+        const prod = parseProductFromUrl(products);
+        if (prod) {
+          setSelectedProduct(prod);
+          setCurrentView('product-detail');
+        }
       } else if (path === '/' || path === '') {
         setCurrentView('home');
       }
@@ -198,11 +268,16 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     window.addEventListener('popstate', handlePopState);
     window.addEventListener('haybah:store-updated', refreshStoreData);
+
     return () => {
+      supabase.removeChannel(realtimeChannel);
+      clearInterval(pollTimer);
+      window.removeEventListener('focus', refreshStoreData);
+      document.removeEventListener('visibilitychange', handleVisibility);
       window.removeEventListener('popstate', handlePopState);
       window.removeEventListener('haybah:store-updated', refreshStoreData);
     };
-  }, [refreshStoreData]);
+  }, [refreshStoreData, products]);
 
   // Sync to localStorage
   useEffect(() => {
@@ -448,10 +523,13 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (view === 'admin') {
       window.history.pushState({}, '', '/admin');
+    } else if (view === 'product-detail' && params?.product) {
+      const shortId = params.product.slug || params.product.id;
+      window.history.pushState({}, '', `/p/${encodeURIComponent(shortId)}`);
     } else if (view === 'home') {
-      if (window.location.pathname.startsWith('/admin')) {
-        window.history.pushState({}, '', '/');
-      }
+      window.history.pushState({}, '', '/');
+    } else if (view === 'shop') {
+      window.history.pushState({}, '', '/shop');
     }
 
     setCurrentView(view);

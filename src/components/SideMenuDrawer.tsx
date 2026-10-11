@@ -29,6 +29,8 @@ export const SideMenuDrawer: React.FC = () => {
     setIsSideMenuOpen,
     navigateTo,
     setIsLocationModalOpen,
+    categories,
+    products,
   } = useShop();
 
   // Clean Tab switcher for a calm, uncluttered experience
@@ -191,37 +193,59 @@ export const SideMenuDrawer: React.FC = () => {
 
                 {/* Minimalist Categories List with Clean Breathing Room */}
                 <div className="pt-2">
-                  <div className="flex items-center justify-between px-2 mb-2.5">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">
-                      Product Categories
-                    </p>
-                    <span className="text-[10px] font-semibold text-gray-400">
-                      {CATEGORIES.length} Categories
-                    </span>
-                  </div>
+                  {(() => {
+                    const liveCategories = (categories && categories.length > 0 ? categories : CATEGORIES).filter(
+                      (c) => c.isActive !== false
+                    );
+                    const allProds = products || [];
 
-                  <div className="space-y-1">
-                    {CATEGORIES.map((cat) => (
-                      <button
-                        key={cat.id}
-                        type="button"
-                        onClick={() =>
-                          handleLinkClick(() => navigateTo('category', { category: cat.slug }))
-                        }
-                        className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs sm:text-sm text-gray-700 hover:bg-[#FAF7EC] hover:text-[#06201A] transition-all group"
-                      >
-                        <div className="flex items-center gap-2.5">
-                          <span className="w-1.5 h-1.5 rounded-full bg-gray-300 group-hover:bg-[#D4AF37] transition-colors" />
-                          <span className="font-medium group-hover:font-semibold group-hover:translate-x-0.5 transition-transform">
-                            {cat.name}
+                    return (
+                      <>
+                        <div className="flex items-center justify-between px-2 mb-2.5">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                            Product Categories
+                          </p>
+                          <span className="text-[10px] font-semibold text-gray-400">
+                            {liveCategories.length} Categories
                           </span>
                         </div>
-                        <span className="text-[10px] text-gray-400 bg-gray-100/70 group-hover:bg-white group-hover:text-[#AA820A] px-2 py-0.5 rounded-full font-medium transition-colors">
-                          {cat.itemCount} items
-                        </span>
-                      </button>
-                    ))}
-                  </div>
+
+                        <div className="space-y-1">
+                          {liveCategories.map((cat) => {
+                            const count = allProds.filter(
+                              (p) =>
+                                p.isActive !== false &&
+                                (p.category?.toLowerCase() === cat.name.toLowerCase() ||
+                                  p.categorySlug === cat.slug ||
+                                  p.category?.toLowerCase().includes(cat.name.toLowerCase()))
+                            ).length;
+                            const displayCount = count > 0 ? count : (cat.itemCount || 0);
+
+                            return (
+                              <button
+                                key={cat.id}
+                                type="button"
+                                onClick={() =>
+                                  handleLinkClick(() => navigateTo('category', { category: cat.slug }))
+                                }
+                                className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs sm:text-sm text-gray-700 hover:bg-[#FAF7EC] hover:text-[#06201A] transition-all group cursor-pointer"
+                              >
+                                <div className="flex items-center gap-2.5">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-gray-300 group-hover:bg-[#D4AF37] transition-colors" />
+                                  <span className="font-medium group-hover:font-semibold group-hover:translate-x-0.5 transition-transform">
+                                    {cat.name}
+                                  </span>
+                                </div>
+                                <span className="text-[10px] text-gray-400 bg-gray-100/70 group-hover:bg-white group-hover:text-[#AA820A] px-2 py-0.5 rounded-full font-medium transition-colors">
+                                  {displayCount} items
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               </>
             ) : (

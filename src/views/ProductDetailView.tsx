@@ -43,37 +43,62 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({ product })
     });
   };
 
+  // Dynamic SEO: Update document title and OpenGraph tags dynamically for this product
+  React.useEffect(() => {
+    const originalTitle = document.title;
+    document.title = `${product.name} | HAYBAH Bangladesh - haybahbd.com`;
+
+    // Update canonical link
+    let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+    if (canonical) {
+      canonical.href = `https://haybahbd.com/p/${encodeURIComponent(product.slug || product.id)}`;
+    }
+
+    return () => {
+      document.title = originalTitle;
+      if (canonical) {
+        canonical.href = 'https://haybahbd.com/';
+      }
+    };
+  }, [product]);
+
   const handleBuyNow = () => {
     addToCart(product, selectedSize, quantity);
     navigateTo('checkout');
   };
 
   const handleShare = async () => {
+    // Generate clean short URL with haybahbd.com domain: https://haybahbd.com/p/:id
+    const shareUrl = `https://haybahbd.com/p/${encodeURIComponent(product.slug || product.id)}`;
+    const shareTitle = `${product.name} | HAYBAH Bangladesh`;
+    const shareText = `${product.name} – প্রিমিয়াম কোয়ালিটি ও আকর্ষণীয় অফার haybahbd.com-এ!`;
+
     if (navigator.share) {
       try {
         await navigator.share({
-          title: product.name,
-          text: `Check out ${product.name} on HAYBAH`,
-          url: window.location.href,
+          title: shareTitle,
+          text: shareText,
+          url: shareUrl,
         });
+        return;
       } catch (err: unknown) {
-        // Ignore AbortError when user cancels native sharing dialog
+        // Ignore AbortError when user closes native share sheet
         if (err instanceof Error && err.name === 'AbortError') {
           return;
         }
-        // Fallback to clipboard if share failed for other reasons
-        if (navigator.clipboard?.writeText) {
-          navigator.clipboard.writeText(window.location.href).catch(() => {});
-          showToast('Product link copied to clipboard!');
-        }
       }
-    } else {
+    }
+
+    // Fallback: copy to clipboard
+    try {
       if (navigator.clipboard?.writeText) {
-        navigator.clipboard.writeText(window.location.href).catch(() => {});
-        showToast('Product link copied to clipboard!');
+        await navigator.clipboard.writeText(shareUrl);
+        showToast('প্রোডাক্ট লিংক কপি হয়েছে: ' + shareUrl);
       } else {
-        showToast('Product link: ' + window.location.href);
+        showToast('প্রোডাক্ট লিংক: ' + shareUrl);
       }
+    } catch {
+      showToast('প্রোডাক্ট লিংক: ' + shareUrl);
     }
   };
 

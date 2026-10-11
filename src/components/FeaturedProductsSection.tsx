@@ -5,25 +5,36 @@ import { AutoSlideCarousel } from './AutoSlideCarousel';
 import { useShop } from '../context/ShopContext';
 
 export const FeaturedProductsSection: React.FC = () => {
-  const { navigateTo, products } = useShop();
+  const { navigateTo, products, categories } = useShop();
   const [activeTab, setActiveTab] = useState<string>('ALL');
 
-  const tabs = ['ALL', 'HOODIE', 'Y2K JERSEY', 'SWEATSHIRT', 'DROP SHOULDER', 'CARGO & PANTS', 'ETHNIC'];
+  const allCats = categories && categories.length > 0 ? categories : [];
+  const dynamicCategoryTabs = allCats
+    .filter((c) => c.isActive !== false)
+    .slice(0, 7)
+    .map((c) => c.name.toUpperCase());
+
+  const tabs = [
+    'ALL',
+    ...(dynamicCategoryTabs.length > 0
+      ? dynamicCategoryTabs
+      : ['HOODIE', 'Y2K JERSEY', 'SWEATSHIRT', 'DROP SHOULDER', 'CARGO & PANTS', 'ETHNIC']),
+  ];
 
   const allProds = products && products.length > 0 ? products : ALL_PRODUCTS;
 
   // Filter products by selected tab
   const featuredProducts = allProds.filter((p) => {
     if (p.isActive === false) return false;
-    const cat = p.category.toLowerCase();
     if (activeTab === 'ALL') return p.isFeatured;
-    if (activeTab === 'Y2K JERSEY') return cat.includes('jersey');
-    if (activeTab === 'HOODIE') return cat.includes('hoodie');
-    if (activeTab === 'SWEATSHIRT') return cat.includes('sweatshirt');
-    if (activeTab === 'DROP SHOULDER') return cat.includes('drop');
-    if (activeTab === 'CARGO & PANTS') return cat.includes('cargo') || cat.includes('sweatpants');
-    if (activeTab === 'ETHNIC') return cat.includes('panjabi') || cat.includes('abaya') || cat.includes('thobe');
-    return true;
+    const cat = (p.category || '').toLowerCase();
+    const tabLower = activeTab.toLowerCase();
+    return (
+      cat === tabLower ||
+      cat.includes(tabLower) ||
+      tabLower.includes(cat) ||
+      (p.categorySlug && p.categorySlug.toLowerCase().includes(tabLower.replace(/[^a-z0-9]+/g, '-')))
+    );
   });
 
   return (

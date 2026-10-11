@@ -289,52 +289,203 @@ export async function isCurrentUserAdmin(): Promise<boolean> {
 }
 
 // ==========================================
-// 3. STOREFRONT DATA FETCHING
+// 3. STOREFRONT DATA FETCHING & MAPPERS
 // ==========================================
+
+export function mapDbBannerToHeroBanner(row: any): HeroBanner {
+  const defaultMatch = DEFAULT_BANNERS.find((d) => d.id === String(row.id));
+  const image =
+    row.image && String(row.image).trim() !== ''
+      ? String(row.image).trim()
+      : defaultMatch?.image || '';
+
+  return {
+    id: String(row.id),
+    title: row.title || defaultMatch?.title || '',
+    subtitle: row.subtitle || defaultMatch?.subtitle || '',
+    badge: row.badge || defaultMatch?.badge || '',
+    tagline: row.tagline || defaultMatch?.tagline || '',
+    actionText: row.action_text || defaultMatch?.actionText || 'SHOP NOW',
+    actionLink: row.action_link || defaultMatch?.actionLink || 'category',
+    categorySlug: row.category_slug || defaultMatch?.categorySlug || '',
+    image,
+    bgColor: row.bg_color || 'from-[#06201A] via-[#0B2B22] to-[#041511]',
+    accentColor: row.accent_color || '#D4AF37',
+    sortOrder: Number(row.sort_order ?? 0),
+    isActive: row.is_active ?? true,
+    createdAt: row.created_at,
+  };
+}
+
+export function mapDbCategoryToCategoryItem(row: any): CategoryItem {
+  return {
+    id: String(row.id),
+    name: row.name || 'Untitled Category',
+    slug: row.slug || String(row.id),
+    image:
+      row.image ||
+      'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=800&q=80',
+    badge: row.badge || '',
+    itemCount: Number(row.item_count ?? 0),
+    sortOrder: Number(row.sort_order ?? 0),
+    isActive: row.is_active ?? true,
+    createdAt: row.created_at,
+  };
+}
+
+export function mapDbProductToProduct(row: any): Product {
+  const mainImage = row.image || (Array.isArray(row.gallery) && row.gallery[0]) || '';
+  const gallery =
+    Array.isArray(row.gallery) && row.gallery.length > 0
+      ? row.gallery
+      : mainImage
+      ? [mainImage]
+      : [];
+
+  return {
+    id: String(row.id),
+    name: row.name || 'Untitled Product',
+    slug: row.slug || String(row.id),
+    category: row.category || 'General',
+    categorySlug: row.category_slug || row.categorySlug || 'general',
+    price: Number(row.price || 0),
+    originalPrice: row.original_price ? Number(row.original_price) : undefined,
+    discountPercent: Number(row.discount_percent || 0),
+    isHot: Boolean(row.is_hot),
+    isFlashSale: Boolean(row.is_flash_sale),
+    isFeatured: Boolean(row.is_featured),
+    isNewArrival: Boolean(row.is_new_arrival),
+    isActive: row.is_active ?? true,
+    rating: Number(row.rating || 5.0),
+    reviewsCount: Number(row.reviews_count || 12),
+    image: mainImage,
+    gallery,
+    description: row.description || '',
+    shortDescription: row.short_description || '',
+    details: row.details || '',
+    sizes: Array.isArray(row.sizes) && row.sizes.length > 0 ? row.sizes : ['M', 'L', 'XL', 'XXL'],
+    colors: Array.isArray(row.colors) ? row.colors : [],
+    fabric: row.fabric || '',
+    gsm: row.gsm ? Number(row.gsm) : undefined,
+    fit: row.fit || '',
+    sku: row.sku || `HYB-${row.id}`,
+    inStock: Boolean(row.in_stock ?? true),
+    stockQuantity: Number(row.stock_quantity ?? 50),
+    tag: row.tag || '',
+    sortOrder: Number(row.sort_order ?? 0),
+    createdAt: row.created_at || new Date().toISOString(),
+  };
+}
 
 export async function fetchLiveCategories(): Promise<CategoryItem[]> {
   try {
-    const local = getLocalCategories();
-    const deleted = getDeletedCategoryIds();
-    return (local && local.length > 0 ? local : DEFAULT_CATEGORIES).filter(
-      (c) => c.isActive !== false && !deleted.has(c.id)
-    );
-  } catch {
-    return DEFAULT_CATEGORIES;
+    const { data, error } = await supabase
+      .from('categories')
+      .select('*')
+      .order('sort_order', { ascending: true });
+
+    if (!error && Array.isArray(data) && data.length > 0) {
+      const mapped = data.map(mapDbCategoryToCategoryItem);
+      try {
+        localStorage.setItem('haybah_admin_categories', JSON.stringify(mapped));
+      } catch {}
+      return mapped.filter((c) => c.isActive !== false);
+    }
+  } catch (err) {
+    console.warn('Supabase fetch categories note:', err);
   }
+
+  const local = getLocalCategories();
+  const deleted = getDeletedCategoryIds();
+  return (local && local.length > 0 ? local : DEFAULT_CATEGORIES).filter(
+    (c) => c.isActive !== false && !deleted.has(c.id)
+  );
 }
 
 export async function fetchLiveProducts(): Promise<Product[]> {
   try {
-    const local = getLocalProducts();
-    const deleted = getDeletedProductIds();
-    return (local && local.length > 0 ? local : DEFAULT_PRODUCTS).filter(
-      (p) => p.isActive !== false && !deleted.has(p.id)
-    );
-  } catch {
-    return DEFAULT_PRODUCTS;
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .order('sort_order', { ascending: true });
+
+    if (!error && Array.isArray(data) && data.length > 0) {
+      const mapped = data.map(mapDbProductToProduct);
+      try {
+        localStorage.setItem('haybah_admin_products', JSON.stringify(mapped));
+      } catch {}
+      return mapped.filter((p) => p.isActive !== false);
+    }
+  } catch (err) {
+    console.warn('Supabase fetch products note:', err);
   }
+
+  const local = getLocalProducts();
+  const deleted = getDeletedProductIds();
+  return (local && local.length > 0 ? local : DEFAULT_PRODUCTS).filter(
+    (p) => p.isActive !== false && !deleted.has(p.id)
+  );
 }
 
 export async function fetchLiveHeroBanners(): Promise<HeroBanner[]> {
   try {
-    const local = getLocalBanners();
-    const deleted = getDeletedBannerIds();
-    return (local && local.length > 0 ? local : DEFAULT_BANNERS).filter(
-      (b) => b.isActive !== false && !deleted.has(b.id)
-    );
-  } catch {
-    return DEFAULT_BANNERS;
+    const { data, error } = await supabase
+      .from('hero_banners')
+      .select('*')
+      .order('sort_order', { ascending: true });
+
+    if (!error && Array.isArray(data)) {
+      if (data.length > 0) {
+        const mapped = data.map(mapDbBannerToHeroBanner);
+        try {
+          localStorage.setItem('haybah_admin_banners', JSON.stringify(mapped));
+        } catch {}
+        return mapped.filter((b) => b.isActive !== false);
+      }
+    }
+  } catch (err) {
+    console.warn('Supabase fetch banners note:', err);
   }
+
+  const local = getLocalBanners();
+  const deleted = getDeletedBannerIds();
+  return (local && local.length > 0 ? local : DEFAULT_BANNERS).filter(
+    (b) => b.isActive !== false && !deleted.has(b.id)
+  );
 }
 
 export async function fetchLiveSiteSettings(): Promise<SiteSettings> {
   try {
-    const local = getLocalSettings();
-    return local || DEFAULT_SETTINGS;
-  } catch {
-    return DEFAULT_SETTINGS;
+    const { data, error } = await supabase
+      .from('site_settings')
+      .select('*')
+      .limit(1)
+      .maybeSingle();
+
+    if (!error && data) {
+      const mapped: SiteSettings = {
+        brandName: data.brand_name || 'HAYBAH',
+        helpline: data.helpline || '+880 1642-247530',
+        helplineHours: data.helpline_hours || '(11:00 AM – 08:00 PM)',
+        email: data.email || 'haybahclothing1@gmail.com',
+        whatsapp: data.whatsapp || '+8801642247530',
+        marqueeText:
+          data.marquee_text ||
+          'FREE SHIPPING ON ORDERS OVER ৳2000! | CASH ON DELIVERY AVAILABLE ALL OVER BANGLADESH | 7-DAY EXCHANGE POLICY',
+        shippingInsideDhaka: Number(data.shipping_inside_dhaka ?? 80),
+        shippingOutsideDhaka: Number(data.shipping_outside_dhaka ?? 120),
+      };
+      try {
+        localStorage.setItem('haybah_admin_settings', JSON.stringify(mapped));
+      } catch {}
+      return mapped;
+    }
+  } catch (err) {
+    console.warn('Supabase fetch settings note:', err);
   }
+
+  const local = getLocalSettings();
+  return local || DEFAULT_SETTINGS;
 }
 
 // ==========================================
@@ -448,51 +599,325 @@ export async function rpcPlaceOrder(orderData: {
 }
 
 // ==========================================
-// 5. ADMIN DATA FETCHING & CRUD
+// 5. ADMIN DATA FETCHING & CLOUD CRUD
 // ==========================================
 
 export async function adminFetchAllProducts(): Promise<Product[]> {
   try {
-    const local = getLocalProducts();
-    const deleted = getDeletedProductIds();
-    return (local && local.length > 0 ? local : DEFAULT_PRODUCTS).filter(
-      (p) => !deleted.has(p.id)
-    );
-  } catch {
-    return DEFAULT_PRODUCTS;
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .order('sort_order', { ascending: true });
+
+    if (!error && Array.isArray(data) && data.length > 0) {
+      const mapped = data.map(mapDbProductToProduct);
+      try {
+        localStorage.setItem('haybah_admin_products', JSON.stringify(mapped));
+      } catch {}
+      return mapped;
+    }
+  } catch (err) {
+    console.warn('Supabase admin fetch products note:', err);
   }
+
+  const local = getLocalProducts();
+  const deleted = getDeletedProductIds();
+  return (local && local.length > 0 ? local : DEFAULT_PRODUCTS).filter(
+    (p) => !deleted.has(p.id)
+  );
 }
 
 export async function adminFetchAllCategories(): Promise<CategoryItem[]> {
   try {
-    const local = getLocalCategories();
-    const deleted = getDeletedCategoryIds();
-    return (local && local.length > 0 ? local : DEFAULT_CATEGORIES).filter(
-      (c) => !deleted.has(c.id)
-    );
-  } catch {
-    return DEFAULT_CATEGORIES;
+    const { data, error } = await supabase
+      .from('categories')
+      .select('*')
+      .order('sort_order', { ascending: true });
+
+    if (!error && Array.isArray(data) && data.length > 0) {
+      const mapped = data.map(mapDbCategoryToCategoryItem);
+      try {
+        localStorage.setItem('haybah_admin_categories', JSON.stringify(mapped));
+      } catch {}
+      return mapped;
+    }
+  } catch (err) {
+    console.warn('Supabase admin fetch categories note:', err);
   }
+
+  const local = getLocalCategories();
+  const deleted = getDeletedCategoryIds();
+  return (local && local.length > 0 ? local : DEFAULT_CATEGORIES).filter(
+    (c) => !deleted.has(c.id)
+  );
 }
 
 export async function adminFetchAllBanners(): Promise<HeroBanner[]> {
   try {
-    const local = getLocalBanners();
-    const deleted = getDeletedBannerIds();
-    return (local && local.length > 0 ? local : DEFAULT_BANNERS).filter(
-      (b) => !deleted.has(b.id)
-    );
-  } catch {
-    return DEFAULT_BANNERS;
+    const { data, error } = await supabase
+      .from('hero_banners')
+      .select('*')
+      .order('sort_order', { ascending: true });
+
+    if (!error && Array.isArray(data) && data.length > 0) {
+      const mapped = data.map(mapDbBannerToHeroBanner);
+      try {
+        localStorage.setItem('haybah_admin_banners', JSON.stringify(mapped));
+      } catch {}
+      return mapped;
+    }
+  } catch (err) {
+    console.warn('Supabase admin fetch banners note:', err);
+  }
+
+  const local = getLocalBanners();
+  const deleted = getDeletedBannerIds();
+  return (local && local.length > 0 ? local : DEFAULT_BANNERS).filter(
+    (b) => !deleted.has(b.id)
+  );
+}
+
+export async function remoteSaveBanner(
+  banner: Partial<HeroBanner>
+): Promise<{ success: boolean; banner: HeroBanner; error?: string; isRlsError?: boolean }> {
+  const localSaved = saveLocalBanner(banner);
+  const payload = {
+    id: localSaved.id,
+    title: localSaved.title,
+    subtitle: localSaved.subtitle || '',
+    badge: localSaved.badge || '',
+    tagline: localSaved.tagline || '',
+    action_text: localSaved.actionText || 'SHOP NOW',
+    action_link: localSaved.actionLink || 'category',
+    category_slug: localSaved.categorySlug || '',
+    image: localSaved.image || '',
+    bg_color: localSaved.bgColor || 'from-[#06201A] via-[#0B2B22] to-[#041511]',
+    accent_color: localSaved.accentColor || '#D4AF37',
+    sort_order: localSaved.sortOrder ?? 1,
+    is_active: localSaved.isActive ?? true,
+    updated_at: new Date().toISOString(),
+  };
+
+  try {
+    const { error } = await supabase.from('hero_banners').upsert(payload);
+    if (error) {
+      const isRls = error.code === '42501' || error.message?.includes('row-level security');
+      return { success: false, banner: localSaved, error: error.message, isRlsError: isRls };
+    }
+    return { success: true, banner: localSaved };
+  } catch (err: any) {
+    return { success: false, banner: localSaved, error: err?.message || 'Remote error' };
+  }
+}
+
+export async function remoteDeleteBanner(
+  bannerId: string
+): Promise<{ success: boolean; error?: string; isRlsError?: boolean }> {
+  deleteLocalBanner(bannerId);
+  try {
+    const { error } = await supabase.from('hero_banners').delete().eq('id', bannerId);
+    if (error) {
+      const isRls = error.code === '42501' || error.message?.includes('row-level security');
+      return { success: false, error: error.message, isRlsError: isRls };
+    }
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err?.message || 'Remote error' };
+  }
+}
+
+export async function remoteSaveCategory(
+  category: Partial<CategoryItem>
+): Promise<{ success: boolean; category: CategoryItem; error?: string; isRlsError?: boolean }> {
+  const localSaved = saveLocalCategory(category);
+  const payload = {
+    id: localSaved.id,
+    name: localSaved.name,
+    slug: localSaved.slug,
+    image: localSaved.image || '',
+    badge: localSaved.badge || '',
+    item_count: localSaved.itemCount ?? 0,
+    sort_order: localSaved.sortOrder ?? 1,
+    is_active: localSaved.isActive ?? true,
+    updated_at: new Date().toISOString(),
+  };
+
+  try {
+    const { error } = await supabase.from('categories').upsert(payload);
+    if (error) {
+      const isRls = error.code === '42501' || error.message?.includes('row-level security');
+      return { success: false, category: localSaved, error: error.message, isRlsError: isRls };
+    }
+    return { success: true, category: localSaved };
+  } catch (err: any) {
+    return { success: false, category: localSaved, error: err?.message || 'Remote error' };
+  }
+}
+
+export async function remoteDeleteCategory(
+  categoryId: string
+): Promise<{ success: boolean; error?: string; isRlsError?: boolean }> {
+  deleteLocalCategory(categoryId);
+  try {
+    const { error } = await supabase.from('categories').delete().eq('id', categoryId);
+    if (error) {
+      const isRls = error.code === '42501' || error.message?.includes('row-level security');
+      return { success: false, error: error.message, isRlsError: isRls };
+    }
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err?.message || 'Remote error' };
+  }
+}
+
+export async function remoteSaveProduct(
+  product: Partial<Product>
+): Promise<{ success: boolean; product: Product; error?: string; isRlsError?: boolean }> {
+  const localSaved = saveLocalProduct(product);
+  const payload = {
+    id: localSaved.id,
+    name: localSaved.name,
+    slug: localSaved.slug,
+    category: localSaved.category,
+    category_slug: localSaved.categorySlug,
+    price: localSaved.price,
+    original_price: localSaved.originalPrice || null,
+    discount_percent: localSaved.discountPercent || 0,
+    is_hot: Boolean(localSaved.isHot),
+    is_flash_sale: Boolean(localSaved.isFlashSale),
+    is_featured: Boolean(localSaved.isFeatured),
+    is_new_arrival: Boolean(localSaved.isNewArrival),
+    is_active: localSaved.isActive ?? true,
+    rating: localSaved.rating || 5.0,
+    reviews_count: localSaved.reviewsCount || 12,
+    image: localSaved.image || '',
+    gallery: localSaved.gallery || [],
+    description: localSaved.description || '',
+    short_description: localSaved.shortDescription || '',
+    details: localSaved.details || '',
+    sizes: localSaved.sizes || ['M', 'L', 'XL', 'XXL'],
+    colors: localSaved.colors || [],
+    fabric: localSaved.fabric || '',
+    gsm: localSaved.gsm || null,
+    fit: localSaved.fit || '',
+    sku: localSaved.sku || `HYB-${localSaved.id}`,
+    in_stock: localSaved.inStock ?? true,
+    stock_quantity: localSaved.stockQuantity ?? 50,
+    tag: localSaved.tag || '',
+    sort_order: localSaved.sortOrder ?? 0,
+    updated_at: new Date().toISOString(),
+  };
+
+  try {
+    const { error } = await supabase.from('products').upsert(payload);
+    if (error) {
+      const isRls = error.code === '42501' || error.message?.includes('row-level security');
+      return { success: false, product: localSaved, error: error.message, isRlsError: isRls };
+    }
+    return { success: true, product: localSaved };
+  } catch (err: any) {
+    return { success: false, product: localSaved, error: err?.message || 'Remote error' };
+  }
+}
+
+export async function remoteDeleteProduct(
+  productId: string
+): Promise<{ success: boolean; error?: string; isRlsError?: boolean }> {
+  deleteLocalProduct(productId);
+  try {
+    const { error } = await supabase.from('products').delete().eq('id', productId);
+    if (error) {
+      const isRls = error.code === '42501' || error.message?.includes('row-level security');
+      return { success: false, error: error.message, isRlsError: isRls };
+    }
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err?.message || 'Remote error' };
+  }
+}
+
+export async function checkSupabaseWritePermission(): Promise<{
+  writable: boolean;
+  error?: string;
+  isRlsError?: boolean;
+}> {
+  try {
+    const { data, error } = await supabase.from('hero_banners').select('id').limit(1);
+    if (error) {
+      return {
+        writable: false,
+        error: error.message,
+        isRlsError: error.code === '42501' || error.message?.includes('row-level security'),
+      };
+    }
+
+    if (data && data.length > 0) {
+      const testId = data[0].id;
+      const { error: updErr } = await supabase
+        .from('hero_banners')
+        .update({ updated_at: new Date().toISOString() })
+        .eq('id', testId);
+
+      if (updErr) {
+        return {
+          writable: false,
+          error: updErr.message,
+          isRlsError: updErr.code === '42501' || updErr.message?.includes('row-level security'),
+        };
+      }
+      return { writable: true };
+    }
+
+    return { writable: true };
+  } catch (e: any) {
+    return { writable: false, error: e?.message };
   }
 }
 
 export async function adminFetchAllOrders(): Promise<OrderDetails[]> {
   try {
-    return getLocalOrders();
-  } catch {
-    return [];
+    const { data, error } = await supabase
+      .from('orders')
+      .select('*, order_items(*)')
+      .order('created_at', { ascending: false });
+
+    if (!error && Array.isArray(data) && data.length > 0) {
+      const mapped: OrderDetails[] = data.map((o: any) => ({
+        orderId: o.order_number || o.id,
+        customerName: o.customer_name || 'Customer',
+        phone: o.phone || '',
+        address: o.address || '',
+        district: o.district || '',
+        thana: o.thana || '',
+        city: o.city || '',
+        paymentMethod: o.payment_method || 'cod',
+        subtotal: Number(o.subtotal || 0),
+        deliveryFee: Number(o.delivery_fee || 0),
+        discount: Number(o.discount || 0),
+        total: Number(o.total || 0),
+        status: o.status || 'pending',
+        notes: o.notes || '',
+        couponCode: o.coupon_code || '',
+        createdAt: o.created_at,
+        updatedAt: o.updated_at,
+        items: (o.order_items || []).map((it: any) => ({
+          product: {
+            id: it.product_id,
+            name: it.product_name,
+            price: Number(it.price || 0),
+            image: it.product_image || '',
+            sizes: [it.size || 'L'],
+          } as any,
+          selectedSize: it.size || 'L',
+          quantity: Number(it.quantity || 1),
+        })),
+      }));
+      return mapped;
+    }
+  } catch (err) {
+    console.warn('Supabase fetch orders note:', err);
   }
+  return getLocalOrders();
 }
 
 export async function adminFetchAllCustomers(): Promise<Customer[]> {
@@ -507,9 +932,7 @@ export async function adminFetchAllCoupons(): Promise<Coupon[]> {
   try {
     const local = getLocalCoupons();
     const deleted = getDeletedCouponIds();
-    return (local && local.length > 0 ? local : []).filter(
-      (c) => !deleted.has(c.id)
-    );
+    return (local && local.length > 0 ? local : []).filter((c) => !deleted.has(c.id));
   } catch {
     return [];
   }
@@ -517,17 +940,40 @@ export async function adminFetchAllCoupons(): Promise<Coupon[]> {
 
 export async function adminFetchAllIncompleteOrders(): Promise<IncompleteOrder[]> {
   try {
-    return getLocalIncompleteOrders();
-  } catch {
-    return [];
+    const { data, error } = await supabase
+      .from('incomplete_orders')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (!error && Array.isArray(data) && data.length > 0) {
+      return data.map((i: any) => ({
+        id: i.id,
+        customerName: i.customer_name || 'Customer',
+        phone: i.phone || '',
+        address: i.address || '',
+        district: i.district || '',
+        thana: i.thana || '',
+        city: i.city || '',
+        cartItems: Array.isArray(i.cart_items) ? i.cart_items : [],
+        totalAmount: Number(i.total || i.total_amount || 0),
+        callCount: Number(i.call_count || 0),
+        lastCallAt: i.last_call_at,
+        status: i.status || 'new',
+        adminNotes: i.admin_notes || '',
+        createdAt: i.created_at,
+        updatedAt: i.updated_at,
+      }));
+    }
+  } catch (err) {
+    console.warn('Supabase fetch incomplete orders note:', err);
   }
+  return getLocalIncompleteOrders();
 }
 
 export async function adminUpdateOrderStatus(
   orderId: string,
   newStatus: OrderStatus
 ): Promise<boolean> {
-  // Always update local store first
   updateLocalOrderStatus(orderId, newStatus);
   try {
     await supabase
@@ -543,20 +989,18 @@ export async function adminUpdateOrderStatus(
 export async function adminSaveSiteSettings(settings: SiteSettings): Promise<boolean> {
   saveLocalSettings(settings);
   try {
-    await supabase
-      .from('site_settings')
-      .upsert({
-        id: 1,
-        brand_name: settings.brandName,
-        helpline: settings.helpline,
-        helpline_hours: settings.helplineHours,
-        email: settings.email,
-        whatsapp: settings.whatsapp,
-        marquee_text: settings.marqueeText,
-        shipping_inside_dhaka: settings.shippingInsideDhaka,
-        shipping_outside_dhaka: settings.shippingOutsideDhaka,
-        updated_at: new Date().toISOString(),
-      });
+    await supabase.from('site_settings').upsert({
+      id: 1,
+      brand_name: settings.brandName,
+      helpline: settings.helpline,
+      helpline_hours: settings.helplineHours,
+      email: settings.email,
+      whatsapp: settings.whatsapp,
+      marquee_text: settings.marqueeText,
+      shipping_inside_dhaka: settings.shippingInsideDhaka,
+      shipping_outside_dhaka: settings.shippingOutsideDhaka,
+      updated_at: new Date().toISOString(),
+    });
   } catch (err) {
     console.warn('Remote save settings note:', err);
   }
