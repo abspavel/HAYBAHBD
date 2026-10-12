@@ -15,7 +15,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { IncompleteOrder, IncompleteOrderStatus } from '../../types';
-import { adminFetchAllIncompleteOrders } from '../../services/supabaseService';
+import { adminFetchAllIncompleteOrders, adminDeleteIncompleteOrder } from '../../services/supabaseService';
 import {
   updateLocalIncompleteOrder,
   saveLocalOrder,
@@ -165,7 +165,12 @@ export const IncompleteOrdersView: React.FC<IncompleteOrdersViewProps> = ({
   const handleDelete = async () => {
     if (!deleteTargetId) return;
     try {
-      await supabase.from('incomplete_orders').delete().eq('id', deleteTargetId);
+      await adminDeleteIncompleteOrder(deleteTargetId);
+      playAdminChime('delete');
+      setNotification({
+        message: '✓ ইনকমপ্লিট অর্ডার লিডটি সফলভাবে ডিলিট করা হয়েছে!',
+        type: 'delete',
+      });
     } catch (e) {
       console.warn(e);
     }
@@ -416,6 +421,13 @@ export const IncompleteOrdersView: React.FC<IncompleteOrdersViewProps> = ({
         isDestructive={true}
         onConfirm={handleDelete}
         onCancel={() => setDeleteTargetId(null)}
+      />
+
+      {/* Toast Notification */}
+      <AdminNotification
+        message={notification.message}
+        type={notification.type}
+        onClose={() => setNotification({ message: null, type: 'success' })}
       />
     </div>
   );

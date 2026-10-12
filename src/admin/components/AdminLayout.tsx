@@ -52,6 +52,15 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
   const { navigateTo } = useShop();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [realtimeOrderAlert, setRealtimeOrderAlert] = useState<string | null>(null);
+  const [adminEmail, setAdminEmail] = useState<string>('Admin Console');
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user?.email) {
+        setAdminEmail(user.email);
+      }
+    });
+  }, []);
 
   // Supabase Realtime subscription for incoming orders
   useEffect(() => {
@@ -242,7 +251,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
           <div className="flex items-center justify-between pt-1">
             <div className="min-w-0 pr-2">
               <p className="text-xs font-bold text-white truncate">HAYBAH Admin</p>
-              <p className="text-[10px] text-gray-400 truncate">haybahclothing1@gmail.com</p>
+              <p className="text-[10px] text-gray-400 truncate">{adminEmail}</p>
             </div>
             <button
               onClick={onLogout}
@@ -256,7 +265,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-h-screen min-w-0 pb-16 md:pb-6">
+      <div className="flex-1 flex flex-col min-h-screen min-w-0 pb-6">
         {/* Desktop Topbar */}
         <header className="hidden md:flex bg-white border-b border-gray-200 px-8 py-3.5 items-center justify-between sticky top-0 z-30 shadow-2xs">
           <div>
@@ -284,7 +293,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
               <div className="w-7 h-7 rounded-full bg-[#06201A] text-[#D4AF37] font-black flex items-center justify-center text-xs">
                 H
               </div>
-              <span className="font-bold text-gray-800">haybahclothing1@gmail.com</span>
+              <span className="font-bold text-gray-800">{adminEmail}</span>
             </div>
           </div>
         </header>
@@ -293,69 +302,6 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
         <main className="flex-1 p-3 sm:p-6 md:p-8 max-w-7xl w-full mx-auto">
           {children}
         </main>
-      </div>
-
-      {/* Mobile Bottom Quick Bar */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-[#06201A] border-t border-[#D4AF37]/30 z-30 flex items-center justify-around py-2 px-1">
-        <button
-          onClick={() => onTabChange('dashboard')}
-          className={`flex flex-col items-center gap-0.5 text-[10px] font-bold ${
-            activeTab === 'dashboard' ? 'text-[#D4AF37]' : 'text-gray-400'
-          }`}
-        >
-          <LayoutDashboard className="w-4 h-4" />
-          <span>Stats</span>
-        </button>
-
-        <button
-          onClick={() => onTabChange('orders')}
-          className={`relative flex flex-col items-center gap-0.5 text-[10px] font-bold ${
-            activeTab === 'orders' ? 'text-[#D4AF37]' : 'text-gray-400'
-          }`}
-        >
-          <ShoppingCart className="w-4 h-4" />
-          <span>Orders</span>
-          {newOrdersCount > 0 && (
-            <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-rose-500 text-white text-[8px] font-black flex items-center justify-center">
-              {newOrdersCount}
-            </span>
-          )}
-        </button>
-
-        <button
-          onClick={() => onTabChange('incomplete')}
-          className={`relative flex flex-col items-center gap-0.5 text-[10px] font-bold ${
-            activeTab === 'incomplete' ? 'text-[#D4AF37]' : 'text-gray-400'
-          }`}
-        >
-          <PhoneCall className="w-4 h-4" />
-          <span>Drops</span>
-          {incompleteCount > 0 && (
-            <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-amber-500 text-[#06201A] text-[8px] font-black flex items-center justify-center">
-              {incompleteCount}
-            </span>
-          )}
-        </button>
-
-        <button
-          onClick={() => onTabChange('products')}
-          className={`flex flex-col items-center gap-0.5 text-[10px] font-bold ${
-            activeTab === 'products' ? 'text-[#D4AF37]' : 'text-gray-400'
-          }`}
-        >
-          <Package className="w-4 h-4" />
-          <span>Products</span>
-        </button>
-
-        <button
-          onClick={() => onTabChange('settings')}
-          className={`flex flex-col items-center gap-0.5 text-[10px] font-bold ${
-            activeTab === 'settings' ? 'text-[#D4AF37]' : 'text-gray-400'
-          }`}
-        >
-          <Settings className="w-4 h-4" />
-          <span>Settings</span>
-        </button>
       </div>
     </div>
   );

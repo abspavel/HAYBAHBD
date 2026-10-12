@@ -172,12 +172,52 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [activeOrderConfirmation, setActiveOrderConfirmation] = useState<OrderDetails | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
 
-  // Live Supabase Storefront Data
-  const [products, setProducts] = useState<Product[]>(ALL_PRODUCTS);
-  const [categories, setCategories] = useState<CategoryItem[]>(CATEGORIES);
-  const [heroBanners, setHeroBanners] = useState<HeroBanner[]>(DEFAULT_BANNERS);
-  const [siteSettings, setSiteSettings] = useState<SiteSettings>(DEFAULT_SETTINGS);
-  const [loadingStoreData, setLoadingStoreData] = useState(true);
+  // Live Supabase Storefront Data - Instant load from cached state
+  const [products, setProducts] = useState<Product[]>(() => {
+    try {
+      const cached = localStorage.getItem('haybah_admin_products');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return ALL_PRODUCTS;
+  });
+
+  const [categories, setCategories] = useState<CategoryItem[]>(() => {
+    try {
+      const cached = localStorage.getItem('haybah_admin_categories');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return CATEGORIES;
+  });
+
+  const [heroBanners, setHeroBanners] = useState<HeroBanner[]>(() => {
+    try {
+      const cached = localStorage.getItem('haybah_admin_banners');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return [];
+  });
+
+  const [siteSettings, setSiteSettings] = useState<SiteSettings>(() => {
+    try {
+      const cached = localStorage.getItem('haybah_admin_settings');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && parsed.brandName) return parsed;
+      }
+    } catch {}
+    return DEFAULT_SETTINGS;
+  });
+
+  const [loadingStoreData, setLoadingStoreData] = useState(false);
 
   // Fetch live storefront data from Supabase
   const refreshStoreData = useCallback(async () => {
@@ -191,6 +231,9 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (Array.isArray(liveProds) && liveProds.length > 0) {
         setProducts(liveProds);
+        try {
+          localStorage.setItem('haybah_admin_products', JSON.stringify(liveProds));
+        } catch {}
 
         // If URL currently points to a product link, resolve product from liveProds
         if (typeof window !== 'undefined') {
@@ -203,12 +246,21 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       if (Array.isArray(liveCats) && liveCats.length > 0) {
         setCategories(liveCats);
+        try {
+          localStorage.setItem('haybah_admin_categories', JSON.stringify(liveCats));
+        } catch {}
       }
-      if (Array.isArray(liveBanners)) {
+      if (Array.isArray(liveBanners) && liveBanners.length > 0) {
         setHeroBanners(liveBanners);
+        try {
+          localStorage.setItem('haybah_admin_banners', JSON.stringify(liveBanners));
+        } catch {}
       }
       if (liveSettings) {
         setSiteSettings(liveSettings);
+        try {
+          localStorage.setItem('haybah_admin_settings', JSON.stringify(liveSettings));
+        } catch {}
       }
     } catch (e) {
       console.warn('Storefront data sync warning:', e);
@@ -250,6 +302,23 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         refreshStoreData();
       }
     };
+
+    // Instant local broadcast handler across admin and storefront
+    const handleLocalStoreUpdated = () => {
+      try {
+        const cp = localStorage.getItem('haybah_admin_products');
+        if (cp) setProducts(JSON.parse(cp));
+        const cc = localStorage.getItem('haybah_admin_categories');
+        if (cc) setCategories(JSON.parse(cc));
+        const cb = localStorage.getItem('haybah_admin_banners');
+        if (cb) setHeroBanners(JSON.parse(cb));
+        const cs = localStorage.getItem('haybah_admin_settings');
+        if (cs) setSiteSettings(JSON.parse(cs));
+      } catch {}
+      refreshStoreData();
+    };
+
+    window.addEventListener('haybah:store-updated', handleLocalStoreUpdated);
     window.addEventListener('focus', refreshStoreData);
     document.addEventListener('visibilitychange', handleVisibility);
 
@@ -270,15 +339,14 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     window.addEventListener('popstate', handlePopState);
-    window.addEventListener('haybah:store-updated', refreshStoreData);
 
     return () => {
       supabase.removeChannel(realtimeChannel);
       clearInterval(pollTimer);
+      window.removeEventListener('haybah:store-updated', handleLocalStoreUpdated);
       window.removeEventListener('focus', refreshStoreData);
       document.removeEventListener('visibilitychange', handleVisibility);
       window.removeEventListener('popstate', handlePopState);
-      window.removeEventListener('haybah:store-updated', refreshStoreData);
     };
   }, [refreshStoreData, products]);
 

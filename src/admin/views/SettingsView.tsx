@@ -43,11 +43,17 @@ export const SettingsView: React.FC = () => {
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [passwordSuccess, setPasswordSuccess] = useState(false);
   const [updatingPassword, setUpdatingPassword] = useState(false);
+  const [adminUserEmail, setAdminUserEmail] = useState('Admin Account');
 
   useEffect(() => {
     async function load() {
       const live = await fetchLiveSiteSettings();
       setSettings(live);
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.email) {
+        setAdminUserEmail(user.email);
+      }
     }
     load();
   }, []);
@@ -349,7 +355,7 @@ export const SettingsView: React.FC = () => {
                   required
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
-                  placeholder="admin123"
+                  placeholder="Enter current password"
                   className="w-full p-2.5 rounded-xl border border-gray-300 focus:border-[#D4AF37]"
                 />
               </div>
@@ -432,7 +438,7 @@ export const SettingsView: React.FC = () => {
               </div>
               <div>
                 <h4 className="font-black text-sm text-white">HAYBAH Admin</h4>
-                <p className="text-[11px] text-[#E8CE7A] font-mono">haybahclothing1@gmail.com</p>
+                <p className="text-[11px] text-[#E8CE7A] font-mono">{adminUserEmail}</p>
               </div>
             </div>
 

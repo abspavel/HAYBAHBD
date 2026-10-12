@@ -10,12 +10,14 @@ import {
   Calendar,
   RefreshCw,
   ShoppingBag,
+  Trash2,
 } from 'lucide-react';
 import { OrderDetails, OrderStatus } from '../../types';
-import { adminFetchAllOrders } from '../../services/supabaseService';
+import { adminFetchAllOrders, adminDeleteOrder } from '../../services/supabaseService';
 import { playAdminChime } from '../../services/localAdminStore';
 import { StatusBadge } from '../components/StatusBadge';
 import { OrderDetailsDrawer } from '../components/OrderDetailsDrawer';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 import { AdminNotification, NotificationType } from '../components/AdminNotification';
 
 interface OrdersViewProps {
@@ -28,6 +30,8 @@ export const OrdersView: React.FC<OrdersViewProps> = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeStatusTab, setActiveStatusTab] = useState<'all' | OrderStatus>('all');
   const [selectedOrder, setSelectedOrder] = useState<OrderDetails | null>(null);
+  const [orderToDelete, setOrderToDelete] = useState<OrderDetails | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [notification, setNotification] = useState<{ message: string | null; type: NotificationType }>({
     message: null,
     type: 'success',
@@ -311,10 +315,22 @@ export const OrdersView: React.FC<OrdersViewProps> = () => {
                               e.stopPropagation();
                               setSelectedOrder(order);
                             }}
-                            className="p-1.5 rounded-lg bg-gray-100 hover:bg-[#D4AF37] hover:text-[#06201A] text-gray-700"
+                            className="p-1.5 rounded-lg bg-gray-100 hover:bg-[#D4AF37] hover:text-[#06201A] text-gray-700 cursor-pointer"
                             title="View Details"
                           >
                             <Eye className="w-3.5 h-3.5" />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOrderToDelete(order);
+                            }}
+                            className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-600 cursor-pointer transition-colors"
+                            title="Delete Order"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </td>
@@ -326,6 +342,34 @@ export const OrdersView: React.FC<OrdersViewProps> = () => {
           </table>
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={Boolean(orderToDelete)}
+        title="অর্ডার ডিলিট নিশ্চিত করুন (Delete Order)"
+        message={`আপনি কি নিশ্চিতভাবে অর্ডার #${orderToDelete?.orderId} (${orderToDelete?.customerName}) চিরতরে ডিলিট করতে চান? এই একশন আনডু করা যাবে না।`}
+        confirmLabel={isDeleting ? 'Deleting...' : 'Delete Order'}
+        isDestructive={true}
+        onConfirm={async () => {
+          if (!orderToDelete) return;
+          setIsDeleting(true);
+          try {
+            await adminDeleteOrder(orderToDelete.orderId);
+            playAdminChime('delete');
+            setNotification({
+              message: `✓ অর্ডার #${orderToDelete.orderId} সফলভাবে ডিলিট করা হয়েছে!`,
+              type: 'delete',
+            });
+            await loadOrders();
+          } catch (e) {
+            console.error(e);
+          } finally {
+            setIsDeleting(false);
+            setOrderToDelete(null);
+          }
+        }}
+        onCancel={() => setOrderToDelete(null)}
+      />
 
       {/* Order Details Drawer */}
       <OrderDetailsDrawer

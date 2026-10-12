@@ -13,11 +13,13 @@ import {
   X,
   CreditCard,
   Loader2,
+  Trash2,
 } from 'lucide-react';
 import { Customer, OrderDetails } from '../../types';
-import { adminFetchAllCustomers, adminFetchAllOrders } from '../../services/supabaseService';
+import { adminFetchAllCustomers, adminFetchAllOrders, adminDeleteCustomer } from '../../services/supabaseService';
 import { getLocalCustomers, saveLocalCustomer, toggleBlockCustomer as toggleBlockLocalCustomer, playAdminChime } from '../../services/localAdminStore';
 import { supabase } from '../../lib/supabase';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 import { AdminNotification, NotificationType } from '../components/AdminNotification';
 
 export const CustomersView: React.FC = () => {
@@ -26,6 +28,8 @@ export const CustomersView: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [adminNote, setAdminNote] = useState('');
   const [notification, setNotification] = useState<{ message: string | null; type: NotificationType }>({
     message: null,
@@ -315,10 +319,22 @@ export const CustomersView: React.FC = () => {
                             setSelectedCustomer(cust);
                             setAdminNote(cust.adminNotes || '');
                           }}
-                          className="p-1.5 rounded-lg bg-gray-100 hover:bg-[#D4AF37] hover:text-[#06201A] text-gray-700"
+                          className="p-1.5 rounded-lg bg-gray-100 hover:bg-[#D4AF37] hover:text-[#06201A] text-gray-700 cursor-pointer"
                           title="View Profile"
                         >
                           <Eye className="w-3.5 h-3.5" />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setCustomerToDelete(cust);
+                          }}
+                          className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-600 cursor-pointer transition-colors"
+                          title="Delete Customer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </td>
@@ -358,10 +374,10 @@ export const CustomersView: React.FC = () => {
             {/* Body */}
             <div className="p-5 space-y-6 flex-1 text-xs">
               {/* Quick Contact & Action Buttons */}
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-4 gap-2">
                 <a
                   href={`tel:${selectedCustomer.phone}`}
-                  className="p-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold flex items-center justify-center gap-1.5"
+                  className="p-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold flex items-center justify-center gap-1 text-[11px]"
                 >
                   <Phone className="w-3.5 h-3.5 text-emerald-600" />
                   <span>Call</span>
@@ -371,7 +387,7 @@ export const CustomersView: React.FC = () => {
                   href={`https://wa.me/880${selectedCustomer.phone.replace(/[^0-9]/g, '').slice(-10)}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="p-2.5 rounded-xl bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#128C7E] font-bold flex items-center justify-center gap-1.5"
+                  className="p-2 rounded-xl bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#128C7E] font-bold flex items-center justify-center gap-1 text-[11px]"
                 >
                   <MessageSquare className="w-3.5 h-3.5 text-[#25D366]" />
                   <span>WhatsApp</span>
@@ -380,7 +396,7 @@ export const CustomersView: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => toggleBlockCustomer(selectedCustomer)}
-                  className={`p-2.5 rounded-xl font-bold flex items-center justify-center gap-1.5 ${
+                  className={`p-2 rounded-xl font-bold flex items-center justify-center gap-1 text-[11px] ${
                     selectedCustomer.isBlocked
                       ? 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
                       : 'bg-rose-50 text-rose-800 hover:bg-rose-100'
@@ -397,6 +413,16 @@ export const CustomersView: React.FC = () => {
                       <span>Block</span>
                     </>
                   )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setCustomerToDelete(selectedCustomer)}
+                  className="p-2 rounded-xl font-bold flex items-center justify-center gap-1 text-[11px] bg-red-50 hover:bg-red-600 hover:text-white text-red-600 transition-colors cursor-pointer"
+                  title="Delete Customer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Delete</span>
                 </button>
               </div>
 
@@ -496,6 +522,37 @@ export const CustomersView: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Delete Customer Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={Boolean(customerToDelete)}
+        title="কাস্টমার ডিলিট নিশ্চিত করুন (Delete Customer)"
+        message={`আপনি কি নিশ্চিতভাবে "${customerToDelete?.name}" (${customerToDelete?.phone}) কে ডিলিট করতে চান? এই কাস্টমার প্রোফাইলটি মুছে যাবে।`}
+        confirmLabel={isDeleting ? 'Deleting...' : 'Delete Customer'}
+        isDestructive={true}
+        onConfirm={async () => {
+          if (!customerToDelete) return;
+          setIsDeleting(true);
+          try {
+            await adminDeleteCustomer(customerToDelete.id, customerToDelete.phone);
+            playAdminChime('delete');
+            setNotification({
+              message: `✓ কাস্টমার "${customerToDelete.name}" সফলভাবে ডিলিট করা হয়েছে!`,
+              type: 'delete',
+            });
+            if (selectedCustomer?.id === customerToDelete.id) {
+              setSelectedCustomer(null);
+            }
+            await loadData();
+          } catch (e) {
+            console.error(e);
+          } finally {
+            setIsDeleting(false);
+            setCustomerToDelete(null);
+          }
+        }}
+        onCancel={() => setCustomerToDelete(null)}
+      />
 
       {/* Toast Notification */}
       <AdminNotification

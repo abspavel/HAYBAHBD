@@ -1,5 +1,5 @@
 import React from 'react';
-import { Menu, ShoppingBag } from 'lucide-react';
+import { Menu, ShoppingBag, User } from 'lucide-react';
 import { HaybahLogo } from './HaybahLogo';
 import { useShop } from '../context/ShopContext';
 
@@ -139,18 +139,30 @@ export const Header: React.FC = () => {
           </div>
         </div>
 
-        {/* Right: 22-24px Cart Icon Button with Count Badge (Vertically Centered) - Opens dedicated Cart Page */}
-        <button
-          type="button"
-          aria-label="Open cart page"
-          onClick={() => navigateTo('cart')}
-          className="relative w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-[#06201A] hover:text-[#AA820A] rounded-full hover:bg-gray-100/80 transition-all active:scale-90 cursor-pointer shrink-0 z-20"
-        >
-          <ShoppingBag className="w-[22px] h-[22px] sm:w-[24px] sm:h-[24px] stroke-[2.2]" />
-          <span className="absolute -top-0.5 -right-0.5 min-w-[17px] h-[17px] px-1 bg-[#06201A] text-[#D4AF37] border border-[#D4AF37] rounded-full text-[8.5px] font-black flex items-center justify-center leading-none shadow-xs">
-            {itemCount}
-          </span>
-        </button>
+        {/* Right: Account & Cart Buttons */}
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0 z-20">
+          <button
+            type="button"
+            aria-label="Account profile"
+            onClick={() => navigateTo('account')}
+            className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-[#06201A] hover:text-[#AA820A] rounded-full hover:bg-gray-100/80 transition-all active:scale-90 cursor-pointer"
+            title="My Profile / Account"
+          >
+            <User className="w-[20px] h-[20px] sm:w-[22px] sm:h-[22px] stroke-[2.2]" />
+          </button>
+
+          <button
+            type="button"
+            aria-label="Open cart page"
+            onClick={() => navigateTo('cart')}
+            className="relative w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-[#06201A] hover:text-[#AA820A] rounded-full hover:bg-gray-100/80 transition-all active:scale-90 cursor-pointer"
+          >
+            <ShoppingBag className="w-[22px] h-[22px] sm:w-[24px] sm:h-[24px] stroke-[2.2]" />
+            <span className="absolute -top-0.5 -right-0.5 min-w-[17px] h-[17px] px-1 bg-[#06201A] text-[#D4AF37] border border-[#D4AF37] rounded-full text-[8.5px] font-black flex items-center justify-center leading-none shadow-xs">
+              {itemCount}
+            </span>
+          </button>
+        </div>
       </div>
     </header>
   );

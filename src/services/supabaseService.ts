@@ -27,10 +27,13 @@ import {
   getLocalOrders,
   saveLocalOrder,
   updateLocalOrderStatus,
+  deleteLocalOrder,
   getLocalCustomers,
+  deleteLocalCustomer,
   getLocalIncompleteOrders,
   saveLocalIncompleteOrder,
   updateLocalIncompleteOrder,
+  deleteLocalIncompleteOrder,
   getLocalSettings,
   saveLocalSettings,
   getDeletedProductIds,
@@ -207,19 +210,32 @@ export async function isCurrentUserAdmin(): Promise<boolean> {
       return rpcAdmin;
     }
 
-    // Direct check in admins table
-    const { data, error } = await supabase
+    // Direct check in admins table by ID
+    const { data: adminById } = await supabase
       .from('admins')
       .select('id')
       .eq('id', user.id)
       .maybeSingle();
 
-    if (!error && data) {
+    if (adminById) {
       return true;
     }
 
-    // Fallback: if email matches the designated admin email
-    if (user.email === 'haybahclothing1@gmail.com') {
+    // Direct check in admins table by email
+    if (user.email) {
+      const { data: adminByEmail } = await supabase
+        .from('admins')
+        .select('id')
+        .eq('email', user.email.toLowerCase().trim())
+        .maybeSingle();
+
+      if (adminByEmail) {
+        return true;
+      }
+    }
+
+    // Fallback: designated default admin
+    if (user.email && user.email.toLowerCase().trim() === 'haybahclothing1@gmail.com') {
       return true;
     }
 
@@ -377,13 +393,11 @@ export async function fetchLiveHeroBanners(): Promise<HeroBanner[]> {
       .order('sort_order', { ascending: true });
 
     if (!error && Array.isArray(data)) {
-      if (data.length > 0) {
-        const mapped = data.map(mapDbBannerToHeroBanner);
-        try {
-          localStorage.setItem('haybah_admin_banners', JSON.stringify(mapped));
-        } catch {}
-        return mapped.filter((b) => b.isActive !== false);
-      }
+      const mapped = data.map(mapDbBannerToHeroBanner);
+      try {
+        localStorage.setItem('haybah_admin_banners', JSON.stringify(mapped));
+      } catch {}
+      return mapped.filter((b) => b.isActive !== false);
     }
   } catch (err) {
     console.warn('Supabase fetch banners note:', err);
@@ -391,7 +405,7 @@ export async function fetchLiveHeroBanners(): Promise<HeroBanner[]> {
 
   const local = getLocalBanners();
   const deleted = getDeletedBannerIds();
-  return (local && local.length > 0 ? local : DEFAULT_BANNERS).filter(
+  return (local && local.length > 0 ? local : []).filter(
     (b) => b.isActive !== false && !deleted.has(b.id)
   );
 }
@@ -823,7 +837,10 @@ export async function adminFetchAllOrders(): Promise<OrderDetails[]> {
       .select('*, order_items(*)')
       .order('created_at', { ascending: false });
 
-    if (!error && Array.isArray(data) && data.length > 0) {
+    if (!error && Array.isArray(data)) {
+      if (data.length === 0) {
+        return [];
+      }
       const mapped: OrderDetails[] = data.map((o: any) => ({
         orderId: o.order_number || o.id,
         customerName: o.customer_name || 'Customer',
@@ -865,14 +882,6 @@ export async function adminFetchAllOrders(): Promise<OrderDetails[]> {
         })),
       }));
 
-      // Merge with any local orders that might have been saved in browser
-      const local = getLocalOrders();
-      const existingIds = new Set(mapped.map((m) => m.orderId));
-      for (const loc of local) {
-        if (!existingIds.has(loc.orderId)) {
-          mapped.push(loc);
-        }
-      }
       return mapped;
     }
   } catch (err) {
@@ -888,7 +897,10 @@ export async function adminFetchAllCustomers(): Promise<Customer[]> {
       .select('*')
       .order('last_order_date', { ascending: false });
 
-    if (!error && Array.isArray(data) && data.length > 0) {
+    if (!error && Array.isArray(data)) {
+      if (data.length === 0) {
+        return [];
+      }
       const mapped: Customer[] = data.map((c: any) => ({
         id: c.id || `cust-${c.phone}`,
         phone: c.phone || '',
@@ -913,14 +925,6 @@ export async function adminFetchAllCustomers(): Promise<Customer[]> {
         updatedAt: c.updated_at,
       }));
 
-      // Merge with any local customers synthesised from browser orders
-      const local = getLocalCustomers();
-      const existingPhones = new Set(mapped.map((m) => m.phone));
-      for (const loc of local) {
-        if (loc.phone && !existingPhones.has(loc.phone)) {
-          mapped.push(loc);
-        }
-      }
       try {
         localStorage.setItem('haybah_admin_customers', JSON.stringify(mapped));
       } catch {}
@@ -949,7 +953,10 @@ export async function adminFetchAllIncompleteOrders(): Promise<IncompleteOrder[]
       .select('*')
       .order('created_at', { ascending: false });
 
-    if (!error && Array.isArray(data) && data.length > 0) {
+    if (!error && Array.isArray(data)) {
+      if (data.length === 0) {
+        return [];
+      }
       return data.map((i: any) => ({
         id: i.id,
         customerName: i.customer_name || 'Customer',
@@ -986,6 +993,42 @@ export async function adminUpdateOrderStatus(
       .or(`id.eq.${orderId},order_number.eq.${orderId}`);
   } catch (err) {
     console.warn('Remote update order status note:', err);
+  }
+  return true;
+}
+
+export async function adminDeleteOrder(orderId: string): Promise<boolean> {
+  deleteLocalOrder(orderId);
+  try {
+    await supabase.from('order_items').delete().or(`order_id.eq.${orderId}`);
+    await supabase.from('orders').delete().or(`id.eq.${orderId},order_number.eq.${orderId}`);
+  } catch (err) {
+    console.warn('Remote delete order note:', err);
+  }
+  return true;
+}
+
+export async function adminDeleteCustomer(customerId: string, phone?: string): Promise<boolean> {
+  deleteLocalCustomer(customerId);
+  try {
+    if (customerId) {
+      await supabase.from('customers').delete().eq('id', customerId);
+    }
+    if (phone) {
+      await supabase.from('customers').delete().eq('phone', phone);
+    }
+  } catch (err) {
+    console.warn('Remote delete customer note:', err);
+  }
+  return true;
+}
+
+export async function adminDeleteIncompleteOrder(id: string): Promise<boolean> {
+  deleteLocalIncompleteOrder(id);
+  try {
+    await supabase.from('incomplete_orders').delete().eq('id', id);
+  } catch (err) {
+    console.warn('Remote delete incomplete order note:', err);
   }
   return true;
 }

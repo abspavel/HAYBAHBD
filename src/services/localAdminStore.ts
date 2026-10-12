@@ -11,54 +11,25 @@ import {
 } from '../types';
 import { ALL_PRODUCTS, CATEGORIES } from '../data/mockData';
 
-// Default banners fallback - High-res streetwear banner imagery
-export const DEFAULT_BANNERS: HeroBanner[] = [
-  {
-    id: 'banner-1',
-    badge: 'No #1 Streetwear Brand',
-    title: 'URBAN EVOLUTION 2026',
-    subtitle: 'PREMIUM DROPS & EXCLUSIVE CUTS',
-    tagline: 'Engineered for those who lead with energy and edge',
-    actionText: 'EXPLORE COLLECTION',
-    actionLink: 'shop',
-    categorySlug: 'y2k-jersey',
-    image: 'https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=1600&q=85',
-    bgColor: 'from-[#06201A] via-[#0B2B22] to-[#041511]',
-    accentColor: '#D4AF37',
-    sortOrder: 1,
-    isActive: true,
-  },
-  {
-    id: 'banner-2',
-    badge: 'Winter Capsule Collection',
-    title: 'HEAVYWEIGHT HOODIES',
-    subtitle: '420 GSM FRENCH TERRY & CORD SHACKETS',
-    tagline: 'Signature warmth with architectural oversized draping',
-    actionText: 'SHOP WINTER DROPS',
-    actionLink: 'category',
-    categorySlug: 'premium-hoodie',
-    image: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1600&q=85',
-    bgColor: 'from-[#091E19] via-[#102B23] to-[#061814]',
-    accentColor: '#E8CE7A',
-    sortOrder: 2,
-    isActive: true,
-  },
-  {
-    id: 'banner-3',
-    badge: 'Limited Edition Drop',
-    title: 'Y2K MOTOR JERSEYS',
-    subtitle: 'RETRO ATHLETIC APPAREL IN BANGLADESH',
-    tagline: 'Authentic mesh with double stitched number graphics',
-    actionText: 'VIEW JERSEYS',
-    actionLink: 'category',
-    categorySlug: 'premium-drop-shoulders',
-    image: 'https://images.unsplash.com/photo-1523381294911-8d3cead13475?auto=format&fit=crop&w=1600&q=85',
-    bgColor: 'from-[#12241D] via-[#0B2B22] to-[#051510]',
-    accentColor: '#D4AF37',
-    sortOrder: 3,
-    isActive: true,
-  },
-];
+// Default banners fallback - Empty baseline, populated only by live uploaded banners
+export const DEFAULT_BANNERS: HeroBanner[] = [];
+
+// One-time automatic purge of demo orders, customers, and outdated demo banners
+const DEMO_PURGE_KEY = 'haybah_demo_data_purged_final_v3';
+if (typeof window !== 'undefined') {
+  try {
+    if (!localStorage.getItem(DEMO_PURGE_KEY)) {
+      localStorage.removeItem('haybah_orders');
+      localStorage.removeItem('haybah_admin_customers');
+      localStorage.removeItem('haybah_admin_incomplete_orders');
+      const rawB = localStorage.getItem('haybah_admin_banners');
+      if (rawB && (rawB.includes('photo-1509631179647') || rawB.includes('banner-1'))) {
+        localStorage.removeItem('haybah_admin_banners');
+      }
+      localStorage.setItem(DEMO_PURGE_KEY, 'true');
+    }
+  } catch {}
+}
 
 // Default site settings
 export const DEFAULT_SETTINGS: SiteSettings = {
@@ -353,10 +324,21 @@ export function deleteLocalCategory(categoryId: string): boolean {
 export function getLocalBanners(): HeroBanner[] {
   const existing = loadJSON<HeroBanner[] | null>(STORAGE_KEYS.BANNERS, null);
   if (existing && Array.isArray(existing) && existing.length > 0) {
-    return existing;
+    const cleaned = existing.filter(
+      (b) =>
+        !b.image?.includes('photo-1509631179647') &&
+        !b.image?.includes('photo-1483985988355') &&
+        !b.image?.includes('photo-1523381294911') &&
+        b.title !== 'URBAN EVOLUTION 2026' &&
+        b.title !== 'HEAVYWEIGHT HOODIES' &&
+        b.title !== 'Y2K MOTOR JERSEYS'
+    );
+    if (cleaned.length !== existing.length) {
+      saveJSON(STORAGE_KEYS.BANNERS, cleaned);
+    }
+    return cleaned;
   }
-  saveJSON(STORAGE_KEYS.BANNERS, DEFAULT_BANNERS);
-  return DEFAULT_BANNERS;
+  return [];
 }
 
 export function saveLocalBanner(banner: Partial<HeroBanner>): HeroBanner {
@@ -510,229 +492,31 @@ export function deleteLocalCoupon(couponId: string): boolean {
 }
 
 // ============================================================================
-// 5. ORDERS & REALISTIC SEEDS
+// 5. ORDERS (Empty baseline - only real orders from live site)
 // ============================================================================
 
-export const INITIAL_ORDERS: OrderDetails[] = [
-  {
-    orderId: 'HYB-849201',
-    customerName: 'Md. Tanvir Hossain',
-    phone: '01712-345678',
-    address: 'House 42, Road 11, Block D, Banani',
-    city: 'Inside Dhaka',
-    district: 'Dhaka',
-    thana: 'Banani',
-    paymentMethod: 'Cash on Delivery',
-    items: [
-      {
-        id: 'it-1',
-        productId: 'p-hoodie-2',
-        product: {
-          id: 'p-hoodie-2',
-          name: 'Forest Moss Architectural Hoodie',
-          price: 2450,
-          image: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=800&q=80',
-          category: 'Premium Hoodie',
-          rating: 5,
-          reviewsCount: 18,
-          description: '',
-          sizes: ['L'],
-          sku: 'HYB-MOSS-HD',
-          inStock: true,
-        },
-        selectedSize: 'L',
-        quantity: 1,
-      },
-      {
-        id: 'it-2',
-        productId: 'p-drop-1',
-        product: {
-          id: 'p-drop-1',
-          name: 'Heavyweight Minimalist Boxy Drop Tee',
-          price: 1350,
-          image: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=800&q=80',
-          category: 'Drop Shoulder',
-          rating: 4.9,
-          reviewsCount: 22,
-          description: '',
-          sizes: ['XL'],
-          sku: 'HYB-BOX-TEE',
-          inStock: true,
-        },
-        selectedSize: 'XL',
-        quantity: 1,
-      },
-    ],
-    subtotal: 3800,
-    deliveryFee: 80,
-    discount: 0,
-    total: 3880,
-    status: 'pending',
-    notes: 'Please deliver after 3:00 PM if possible',
-    createdAt: '9 Oct 2026, 02:45 PM',
-  },
-  {
-    orderId: 'HYB-793412',
-    customerName: 'Farhan Ahmed',
-    phone: '01819-876543',
-    address: 'GEC Circle, Nasirabad Housing Society, Road 3, House 12',
-    city: 'Outside Dhaka',
-    district: 'Chattogram',
-    thana: 'Panchlaish',
-    paymentMethod: 'Cash on Delivery',
-    items: [
-      {
-        id: 'it-3',
-        productId: 'p-jersey-1',
-        product: {
-          id: 'p-jersey-1',
-          name: 'Y2K Track Speed Racing Jersey #88',
-          price: 1700,
-          image: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=800&q=80',
-          category: 'Y2K Jersey',
-          rating: 4.8,
-          reviewsCount: 14,
-          description: '',
-          sizes: ['M'],
-          sku: 'HYB-JERSEY-88',
-          inStock: true,
-        },
-        selectedSize: 'M',
-        quantity: 1,
-      },
-    ],
-    subtotal: 1700,
-    deliveryFee: 120,
-    discount: 0,
-    total: 1820,
-    status: 'confirmed',
-    notes: 'Call before delivery',
-    createdAt: '9 Oct 2026, 11:15 AM',
-  },
-  {
-    orderId: 'HYB-652190',
-    customerName: 'Rahim Khan',
-    phone: '01911-223344',
-    address: 'Zindabazar, Amberkhana Road, Ward 4',
-    city: 'Outside Dhaka',
-    district: 'Sylhet',
-    thana: 'Kotwali',
-    paymentMethod: 'Cash on Delivery',
-    items: [
-      {
-        id: 'it-4',
-        productId: 'p-shacket-1',
-        product: {
-          id: 'p-shacket-1',
-          name: 'Olive Heavyweight Corduroy Shacket',
-          price: 2600,
-          image: 'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=800&q=80',
-          category: 'Premium Shacket',
-          rating: 5,
-          reviewsCount: 9,
-          description: '',
-          sizes: ['XL'],
-          sku: 'HYB-CORD-SHK',
-          inStock: true,
-        },
-        selectedSize: 'XL',
-        quantity: 1,
-      },
-    ],
-    subtotal: 2600,
-    deliveryFee: 120,
-    discount: 0,
-    total: 2720,
-    status: 'processing',
-    notes: '',
-    createdAt: '8 Oct 2026, 06:30 PM',
-  },
-  {
-    orderId: 'HYB-581044',
-    customerName: 'Sabbir Chowdhury',
-    phone: '01623-998877',
-    address: 'Flat 5B, Green Luxury, Sector 7, Uttara',
-    city: 'Inside Dhaka',
-    district: 'Dhaka',
-    thana: 'Uttara',
-    paymentMethod: 'Cash on Delivery',
-    items: [
-      {
-        id: 'it-5',
-        productId: 'p-cargo-1',
-        product: {
-          id: 'p-cargo-1',
-          name: 'Tactical Deep Green 6-Pocket Cargo',
-          price: 2200,
-          image: 'https://images.unsplash.com/photo-1552902865-b72c031ac5ea?auto=format&fit=crop&w=800&q=80',
-          category: 'Pants & Cargo',
-          rating: 4.9,
-          reviewsCount: 16,
-          description: '',
-          sizes: ['32'],
-          sku: 'HYB-CARGO-6P',
-          inStock: true,
-        },
-        selectedSize: '32',
-        quantity: 1,
-      },
-    ],
-    subtotal: 2200,
-    deliveryFee: 80,
-    discount: 0,
-    total: 2280,
-    status: 'shipped',
-    notes: 'Steadfast Courier tracking active',
-    createdAt: '8 Oct 2026, 01:10 PM',
-  },
-  {
-    orderId: 'HYB-492110',
-    customerName: 'Nafis Iqbal',
-    phone: '01552-667788',
-    address: 'Dhanmondi 27, Road 16 (Old 27), House 15',
-    city: 'Inside Dhaka',
-    district: 'Dhaka',
-    thana: 'Dhanmondi',
-    paymentMethod: 'Cash on Delivery',
-    items: [
-      {
-        id: 'it-6',
-        productId: 'p-drop-1',
-        product: {
-          id: 'p-drop-1',
-          name: 'Heavyweight Minimalist Boxy Drop Tee',
-          price: 1350,
-          image: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=800&q=80',
-          category: 'Drop Shoulder',
-          rating: 4.9,
-          reviewsCount: 22,
-          description: '',
-          sizes: ['L'],
-          sku: 'HYB-BOX-TEE',
-          inStock: true,
-        },
-        selectedSize: 'L',
-        quantity: 2,
-      },
-    ],
-    subtotal: 2700,
-    deliveryFee: 80,
-    discount: 300,
-    total: 2480,
-    couponCode: 'HAYBAH10',
-    status: 'delivered',
-    notes: 'Delivered successfully and cash received',
-    createdAt: '7 Oct 2026, 04:20 PM',
-  },
-];
+export const INITIAL_ORDERS: OrderDetails[] = [];
+
+// Demo order IDs to purge
+const DEMO_ORDER_IDS = new Set([
+  'HYB-849201',
+  'HYB-793412',
+  'HYB-652190',
+  'HYB-581044',
+  'HYB-492110',
+]);
 
 export function getLocalOrders(): OrderDetails[] {
   const stored = loadJSON<OrderDetails[] | null>(STORAGE_KEYS.ORDERS, null);
-  if (stored && Array.isArray(stored) && stored.length > 0) {
-    return stored;
+  if (stored && Array.isArray(stored)) {
+    // Purge any remaining demo seed orders
+    const cleaned = stored.filter((o) => !DEMO_ORDER_IDS.has(o.orderId));
+    if (cleaned.length !== stored.length) {
+      saveJSON(STORAGE_KEYS.ORDERS, cleaned);
+    }
+    return cleaned;
   }
-  saveJSON(STORAGE_KEYS.ORDERS, INITIAL_ORDERS);
-  return INITIAL_ORDERS;
+  return [];
 }
 
 export function saveLocalOrder(order: OrderDetails): void {
@@ -772,16 +556,36 @@ export function deleteLocalOrder(orderId: string): boolean {
 }
 
 // ============================================================================
-// 6. CUSTOMERS
+// 6. CUSTOMERS (Only real customers from orders or user registrations)
 // ============================================================================
+
+const DEMO_CUSTOMER_PHONES = new Set([
+  '01712-345678',
+  '01819-876543',
+  '01911-223344',
+  '01623-998877',
+  '01552-667788',
+]);
 
 export function getLocalCustomers(): Customer[] {
   const stored = loadJSON<Customer[] | null>(STORAGE_KEYS.CUSTOMERS, null);
-  if (stored && Array.isArray(stored) && stored.length > 0) {
-    return stored;
+  if (stored && Array.isArray(stored)) {
+    const cleaned = stored.filter(
+      (c) =>
+        !DEMO_CUSTOMER_PHONES.has(c.phone) &&
+        !c.name.includes('Md. Tanvir Hossain') &&
+        !c.name.includes('Farhan Ahmed') &&
+        !c.name.includes('Rahim Khan') &&
+        !c.name.includes('Sabbir Chowdhury') &&
+        !c.name.includes('Nafis Iqbal')
+    );
+    if (cleaned.length !== stored.length) {
+      saveJSON(STORAGE_KEYS.CUSTOMERS, cleaned);
+    }
+    return cleaned;
   }
 
-  // Synthesize customers from orders
+  // Synthesize customers from REAL orders only
   const orders = getLocalOrders();
   const map = new Map<string, Customer>();
 
@@ -851,6 +655,14 @@ export function saveLocalCustomer(customer: Partial<Customer>): Customer {
   return fullCustomer;
 }
 
+export function deleteLocalCustomer(customerId: string): boolean {
+  const customers = getLocalCustomers();
+  const filtered = customers.filter((c) => c.id !== customerId && c.phone !== customerId);
+  saveJSON(STORAGE_KEYS.CUSTOMERS, filtered);
+  notifyStoreUpdated('customers');
+  return true;
+}
+
 export function toggleBlockCustomer(id: string): boolean {
   const customers = getLocalCustomers();
   const target = customers.find((c) => c.id === id);
@@ -901,63 +713,23 @@ function updateCustomerFromOrder(order: OrderDetails): void {
 }
 
 // ============================================================================
-// 7. INCOMPLETE ORDERS (Leads)
+// 7. INCOMPLETE ORDERS (Leads - empty baseline)
 // ============================================================================
 
-export const INITIAL_INCOMPLETE_ORDERS: IncompleteOrder[] = [
-  {
-    id: 'inc-101',
-    phone: '01799-123456',
-    customerName: 'Shakil Mahmud',
-    address: 'Mirpur 10, Block C, Road 5',
-    city: 'Inside Dhaka',
-    district: 'Dhaka',
-    thana: 'Mirpur',
-    cartItems: [
-      {
-        id: 'ci-1',
-        product: ALL_PRODUCTS[0],
-        selectedSize: 'L',
-        quantity: 1,
-      },
-    ],
-    totalAmount: 2530,
-    callCount: 1,
-    status: 'called',
-    adminNotes: 'Customer asked for size chart confirmation via WhatsApp',
-    createdAt: '9 Oct 2026, 01:20 PM',
-  },
-  {
-    id: 'inc-102',
-    phone: '01923-456789',
-    customerName: 'Mehedi Hasan',
-    address: 'Agrabad Commercial Area',
-    city: 'Outside Dhaka',
-    district: 'Chattogram',
-    thana: 'Double Mooring',
-    cartItems: [
-      {
-        id: 'ci-2',
-        product: ALL_PRODUCTS[1],
-        selectedSize: 'XL',
-        quantity: 1,
-      },
-    ],
-    totalAmount: 1820,
-    callCount: 0,
-    status: 'new',
-    adminNotes: '',
-    createdAt: '9 Oct 2026, 12:40 PM',
-  },
-];
+export const INITIAL_INCOMPLETE_ORDERS: IncompleteOrder[] = [];
+
+const DEMO_INCOMPLETE_IDS = new Set(['inc-101', 'inc-102']);
 
 export function getLocalIncompleteOrders(): IncompleteOrder[] {
   const stored = loadJSON<IncompleteOrder[] | null>(STORAGE_KEYS.INCOMPLETE, null);
-  if (stored && Array.isArray(stored) && stored.length > 0) {
-    return stored;
+  if (stored && Array.isArray(stored)) {
+    const cleaned = stored.filter((i) => !DEMO_INCOMPLETE_IDS.has(i.id));
+    if (cleaned.length !== stored.length) {
+      saveJSON(STORAGE_KEYS.INCOMPLETE, cleaned);
+    }
+    return cleaned;
   }
-  saveJSON(STORAGE_KEYS.INCOMPLETE, INITIAL_INCOMPLETE_ORDERS);
-  return INITIAL_INCOMPLETE_ORDERS;
+  return [];
 }
 
 export function saveLocalIncompleteOrder(lead: Partial<IncompleteOrder>): IncompleteOrder {
@@ -1036,3 +808,76 @@ export function saveLocalSettings(settings: SiteSettings): void {
   saveJSON(STORAGE_KEYS.SETTINGS, settings);
   notifyStoreUpdated('settings');
 }
+
+// ============================================================================
+// 9. CUSTOMER ACCOUNTS & AUTHENTICATION
+// ============================================================================
+
+export interface CustomerAccount {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  password?: string;
+  address?: string;
+  district?: string;
+  thana?: string;
+  city?: string;
+  createdAt: string;
+}
+
+const CUSTOMER_ACCOUNTS_KEY = 'haybah_registered_customers';
+const CUSTOMER_SESSION_KEY = 'haybah_active_customer_session';
+
+export function getRegisteredCustomers(): CustomerAccount[] {
+  return loadJSON<CustomerAccount[]>(CUSTOMER_ACCOUNTS_KEY, []);
+}
+
+export function saveRegisteredCustomer(account: CustomerAccount): CustomerAccount {
+  const accounts = getRegisteredCustomers();
+  const existingIdx = accounts.findIndex(
+    (a) =>
+      a.id === account.id ||
+      (account.email && a.email.toLowerCase() === account.email.toLowerCase()) ||
+      (account.phone && a.phone.replace(/[^0-9]/g, '') === account.phone.replace(/[^0-9]/g, ''))
+  );
+
+  if (existingIdx >= 0) {
+    accounts[existingIdx] = { ...accounts[existingIdx], ...account };
+  } else {
+    accounts.unshift(account);
+  }
+
+  saveJSON(CUSTOMER_ACCOUNTS_KEY, accounts);
+  return account;
+}
+
+export function findCustomerByCredentials(
+  identifier: string,
+  pass: string
+): CustomerAccount | null {
+  const accounts = getRegisteredCustomers();
+  const cleanId = identifier.trim().toLowerCase();
+  const cleanDigits = identifier.replace(/[^0-9]/g, '');
+
+  const matched = accounts.find((a) => {
+    const emailMatch = a.email && a.email.toLowerCase() === cleanId;
+    const phoneMatch = a.phone && cleanDigits && a.phone.replace(/[^0-9]/g, '').endsWith(cleanDigits.slice(-10));
+    return (emailMatch || phoneMatch) && a.password === pass;
+  });
+
+  return matched || null;
+}
+
+export function getActiveCustomerSession(): CustomerAccount | null {
+  return loadJSON<CustomerAccount | null>(CUSTOMER_SESSION_KEY, null);
+}
+
+export function setActiveCustomerSession(account: CustomerAccount | null): void {
+  if (account) {
+    saveJSON(CUSTOMER_SESSION_KEY, account);
+  } else {
+    localStorage.removeItem(CUSTOMER_SESSION_KEY);
+  }
+}
+

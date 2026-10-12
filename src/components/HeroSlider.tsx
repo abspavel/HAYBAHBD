@@ -9,33 +9,8 @@ export interface BannerSlide {
   actionLink?: string;
 }
 
-// High-resolution clean fashion & streetwear banner imagery with zero text baked-in
-const DEFAULT_IMAGE_BANNERS: BannerSlide[] = [
-  {
-    id: 'banner-default-1',
-    image:
-      'https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=1600&q=85',
-    categorySlug: 'y2k-jersey',
-    actionLink: 'shop',
-  },
-  {
-    id: 'banner-default-2',
-    image:
-      'https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1600&q=85',
-    categorySlug: 'premium-hoodie',
-    actionLink: 'category',
-  },
-  {
-    id: 'banner-default-3',
-    image:
-      'https://images.unsplash.com/photo-1523381294911-8d3cead13475?auto=format&fit=crop&w=1600&q=85',
-    categorySlug: 'premium-drop-shoulders',
-    actionLink: 'category',
-  },
-];
-
 export const HeroSlider: React.FC = () => {
-  const { heroBanners } = useShop();
+  const { heroBanners, loadingStoreData } = useShop();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [prevIndex, setPrevIndex] = useState<number | null>(null);
   const [isHovered, setIsHovered] = useState(false);
@@ -56,8 +31,7 @@ export const HeroSlider: React.FC = () => {
           }))
       : [];
 
-  const slides: BannerSlide[] =
-    activeBanners.length > 0 ? activeBanners : DEFAULT_IMAGE_BANNERS;
+  const slides: BannerSlide[] = activeBanners;
 
   // Ensure currentIndex stays within bounds if slides length changes (e.g. banners deleted or updated in admin)
   useEffect(() => {
@@ -113,6 +87,16 @@ export const HeroSlider: React.FC = () => {
       setCurrentIndex((prev) => (prev - 1 + slides.length) % slides.length);
     }
   };
+
+  // If no slides are configured yet
+  if (slides.length === 0) {
+    if (loadingStoreData) {
+      return (
+        <div className="w-full mt-1.5 sm:mt-2 h-[160px] xs:h-[190px] sm:h-[260px] md:h-[340px] lg:h-[420px] bg-gradient-to-r from-[#06201A] via-[#0B2B22] to-[#041511] animate-pulse" />
+      );
+    }
+    return null;
+  }
 
   return (
     <div

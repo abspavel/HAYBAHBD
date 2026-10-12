@@ -35,6 +35,17 @@ export const AdminRoot: React.FC = () => {
           if (isAdmin) {
             setIsAuthenticated(true);
             localStorage.setItem('haybah_admin_authenticated', 'true');
+          } else {
+            setIsAuthenticated(false);
+            localStorage.removeItem('haybah_admin_authenticated');
+            sessionStorage.removeItem('haybah_admin_session_token');
+          }
+        } else {
+          // If no active Supabase Auth session, ensure there is at least an active session token
+          const sessionToken = sessionStorage.getItem('haybah_admin_session_token');
+          if (!sessionToken) {
+            setIsAuthenticated(false);
+            localStorage.removeItem('haybah_admin_authenticated');
           }
         }
       } catch (err) {
@@ -55,7 +66,14 @@ export const AdminRoot: React.FC = () => {
         if (isAdmin) {
           setIsAuthenticated(true);
           localStorage.setItem('haybah_admin_authenticated', 'true');
+        } else {
+          setIsAuthenticated(false);
+          localStorage.removeItem('haybah_admin_authenticated');
         }
+      } else if (event === 'SIGNED_OUT') {
+        setIsAuthenticated(false);
+        localStorage.removeItem('haybah_admin_authenticated');
+        sessionStorage.removeItem('haybah_admin_session_token');
       }
     });
 
@@ -71,8 +89,20 @@ export const AdminRoot: React.FC = () => {
       console.warn(e);
     }
     localStorage.removeItem('haybah_admin_authenticated');
+    sessionStorage.removeItem('haybah_admin_session_token');
     setIsAuthenticated(false);
   };
+
+  if (checkingAuth) {
+    return (
+      <div className="min-h-screen bg-[#06201A] flex flex-col items-center justify-center text-white selection:bg-[#D4AF37]">
+        <div className="w-10 h-10 border-2 border-[#D4AF37] border-t-transparent rounded-full animate-spin mb-3" />
+        <p className="text-xs font-bold text-gray-300 uppercase tracking-widest">
+          Verifying Security Credentials...
+        </p>
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return <AdminLogin onSuccess={() => setIsAuthenticated(true)} />;

@@ -19,6 +19,7 @@ import {
   Headphones,
   ExternalLink,
   ShieldCheck,
+  User,
 } from 'lucide-react';
 import { HaybahLogo } from './HaybahLogo';
 import { CATEGORIES } from '../data/mockData';
@@ -255,6 +256,20 @@ export const SideMenuDrawer: React.FC = () => {
                 <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 px-2 mb-2">
                   Customer Assistance
                 </p>
+
+                <button
+                  type="button"
+                  onClick={() => handleLinkClick(() => navigateTo('account'))}
+                  className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl font-semibold text-xs sm:text-sm text-[#06201A] hover:bg-[#FAF7EC] hover:text-[#AA820A] transition-all group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-7 h-7 rounded-lg bg-amber-50 flex items-center justify-center text-[#D4AF37]">
+                      <User className="w-3.5 h-3.5" />
+                    </div>
+                    <span>My Profile / Account (আমার অ্যাকাউন্ট)</span>
+                  </div>
+                  <ChevronRight className="w-3.5 h-3.5 text-gray-300 group-hover:text-[#AA820A] group-hover:translate-x-0.5 transition-all" />
+                </button>
 
                 <button
                   type="button"

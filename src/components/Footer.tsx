@@ -317,7 +317,7 @@ export const Footer: React.FC = () => {
                 navigateTo('admin');
               }}
               className="inline-flex items-center gap-1.5 text-[11px] text-gray-500 hover:text-[#D4AF37] transition-colors cursor-pointer py-1 px-2.5 rounded-full hover:bg-white/5 border border-transparent hover:border-[#D4AF37]/30"
-              title="Management Console (haybahclothing1@gmail.com)"
+              title="Admin Portal"
             >
               <ShieldCheck className="w-3.5 h-3.5 text-[#D4AF37]" />
               <span>Admin Panel</span>
