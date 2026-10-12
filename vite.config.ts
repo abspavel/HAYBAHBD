@@ -1,14 +1,36 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
+import fs from 'fs';
 import path from 'path';
 import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
+  const rootDir =
+    typeof import.meta !== 'undefined' && import.meta.dirname
+      ? import.meta.dirname
+      : process.cwd();
+
   return {
-    plugins: [react(), tailwindcss()],
+    plugins: [
+      react(),
+      tailwindcss(),
+      {
+        name: 'cloudflare-spa-fallback',
+        closeBundle() {
+          try {
+            const distDir = path.resolve(rootDir, 'dist');
+            const indexPath = path.join(distDir, 'index.html');
+            if (fs.existsSync(indexPath)) {
+              // 200.html enables native Cloudflare Pages SPA client-side routing without redirects
+              fs.copyFileSync(indexPath, path.join(distDir, '200.html'));
+            }
+          } catch {}
+        },
+      },
+    ],
     resolve: {
       alias: {
-        '@': path.resolve(import.meta.dirname, '.'),
+        '@': path.resolve(rootDir, '.'),
       },
     },
     server: {
