@@ -1,6 +1,6 @@
 import React from 'react';
 import { HaybahLogo } from './HaybahLogo';
-import { Phone, Mail, Clock, ShieldCheck } from 'lucide-react';
+import { Phone, Mail, Clock } from 'lucide-react';
 import { useShop } from '../context/ShopContext';
 import { PaymentMethodLogo } from './PaymentMethodLogo';
 
@@ -306,22 +306,6 @@ export const Footer: React.FC = () => {
                 <span>Pavel Ahmed Joy</span>
               </a>
             </span>
-          </div>
-
-          {/* Admin Login Link (Small & Discreet) */}
-          <div className="pt-2 flex items-center justify-center gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                window.history.pushState({}, '', '/admin');
-                navigateTo('admin');
-              }}
-              className="inline-flex items-center gap-1.5 text-[11px] text-gray-500 hover:text-[#D4AF37] transition-colors cursor-pointer py-1 px-2.5 rounded-full hover:bg-white/5 border border-transparent hover:border-[#D4AF37]/30"
-              title="Admin Portal"
-            >
-              <ShieldCheck className="w-3.5 h-3.5 text-[#D4AF37]" />
-              <span>Admin Panel</span>
-            </button>
           </div>
         </div>
       </div>
