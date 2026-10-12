@@ -21,6 +21,7 @@ export const CartView: React.FC = () => {
     updateCartQuantity,
     getCartTotal,
     navigateTo,
+    goBack,
     clearCart,
   } = useShop();
 
@@ -54,7 +55,7 @@ export const CartView: React.FC = () => {
         <div>
           <button
             type="button"
-            onClick={() => navigateTo('home')}
+            onClick={goBack}
             className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-[#06201A] transition-colors mb-2 cursor-pointer"
           >
             <ArrowLeft className="w-3.5 h-3.5" />

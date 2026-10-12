@@ -5,7 +5,7 @@ import { useShop } from '../context/ShopContext';
 import { ProductCard } from '../components/ProductCard';
 
 export const WishlistView: React.FC = () => {
-  const { wishlist, navigateTo } = useShop();
+  const { wishlist, navigateTo, goBack } = useShop();
 
   const wishlistedProducts = ALL_PRODUCTS.filter((p) => wishlist.includes(p.id));
 
@@ -15,11 +15,11 @@ export const WishlistView: React.FC = () => {
       <div className="flex items-center justify-between mb-6">
         <button
           type="button"
-          onClick={() => navigateTo('home')}
-          className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-[#06201A] hover:text-[#AA820A] transition-colors"
+          onClick={goBack}
+          className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-[#06201A] hover:text-[#AA820A] transition-colors cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Back to Home</span>
+          <span>Back</span>
         </button>
 
         <span className="text-xs text-gray-500 font-semibold bg-gray-100 px-3 py-1 rounded-full">

@@ -21,9 +21,7 @@ export const CheckoutModal: React.FC = () => {
     checkCoupon,
     trackIncompleteOrder,
     navigateTo,
-    activeOrderConfirmation,
-    setActiveOrderConfirmation,
-    setIsTrackOrderModalOpen,
+    goBack,
   } = useShop();
 
   const [name, setName] = useState('');
@@ -107,159 +105,13 @@ export const CheckoutModal: React.FC = () => {
     navigateTo('thank-you');
   };
 
-  const copyOrderId = (id: string) => {
-    if (navigator.clipboard?.writeText) {
-      navigator.clipboard.writeText(id).catch(() => {});
-    }
-    setCopiedId(true);
-    setTimeout(() => setCopiedId(false), 2000);
-  };
-
-  // Order Confirmed View
-  if (activeOrderConfirmation) {
-    const order = activeOrderConfirmation;
-    return (
-      <div className="max-w-xl mx-auto px-4 py-6 sm:py-10">
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-gray-200/80 shadow-xl text-center">
-          {/* Animated Success Icon */}
-          <div className="w-16 h-16 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-400 mx-auto flex items-center justify-center mb-3">
-            <CheckCircle2 className="w-9 h-9" />
-          </div>
-
-          <span className="inline-block text-[11px] font-bold text-[#AA820A] uppercase tracking-wider bg-[#FAF7EC] px-3.5 py-1 rounded-full border border-[#D4AF37]/30">
-            Order Confirmed
-          </span>
-
-          <h2 className="text-2xl sm:text-3xl font-black text-[#06201A] mt-2.5">
-            Thank you, {order.customerName}!
-          </h2>
-          <p className="text-xs sm:text-sm text-gray-500 mt-1">
-            Your order has been placed successfully. Please pay cash upon delivery.
-          </p>
-
-          {/* Order ID Pill */}
-          <div className="mt-4.5 inline-flex items-center gap-2 px-4 py-2 bg-gray-50 rounded-xl border border-gray-200">
-            <span className="text-xs text-gray-500 font-medium">Order ID:</span>
-            <span className="text-sm font-black text-[#06201A] font-mono tracking-wider">
-              {order.orderId}
-            </span>
-            <button
-              type="button"
-              onClick={() => copyOrderId(order.orderId)}
-              className="p-1 text-gray-400 hover:text-[#06201A]"
-              title="Copy"
-            >
-              {copiedId ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
-            </button>
-          </div>
-
-          {/* Minimalist Receipt Card */}
-          <div className="mt-6 bg-white rounded-2xl p-4 sm:p-5 text-left border border-gray-200 divide-y divide-gray-100 text-xs sm:text-sm space-y-3">
-            <div className="space-y-1.5 pb-2">
-              <div className="flex justify-between">
-                <span className="text-gray-500">Customer Name:</span>
-                <span className="font-semibold text-gray-900">{order.customerName}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Mobile Number:</span>
-                <span className="font-semibold text-gray-900">{order.phone}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Delivery Address:</span>
-                <span className="font-semibold text-gray-900 text-right max-w-[65%]">
-                  {order.address}, {order.thana}, {order.district}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Payment Method:</span>
-                <span className="font-bold text-emerald-700">Cash on Delivery (COD)</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Estimated Delivery:</span>
-                <span className="font-semibold text-gray-800">
-                  {order.city === 'Inside Dhaka' ? '24-48 Hours (Inside Dhaka)' : '48-72 Hours (Outside Dhaka)'}
-                </span>
-              </div>
-            </div>
-
-            {/* Itemized List */}
-            <div className="pt-3 space-y-2">
-              <span className="font-bold text-gray-700 uppercase tracking-wider text-[11px] block">
-                Ordered Items ({order.items.length})
-              </span>
-              {order.items.map((item) => (
-                <div key={item.id} className="flex justify-between items-center text-xs">
-                  <span className="text-gray-700">
-                    {item.product.name} ({item.selectedSize}) × {item.quantity}
-                  </span>
-                  <span className="font-bold text-gray-900">
-                    ৳{(item.product.price * item.quantity).toLocaleString()}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            {/* Price Calculations */}
-            <div className="pt-3 space-y-1.5">
-              <div className="flex justify-between text-gray-600">
-                <span>Subtotal:</span>
-                <span>৳{order.subtotal.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between text-gray-600">
-                <span>Delivery Fee:</span>
-                <span>৳{order.deliveryFee}</span>
-              </div>
-              <div className="flex justify-between text-base font-black text-[#06201A] pt-1">
-                <span>Total Payable:</span>
-                <span>৳{order.total.toLocaleString()}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Action CTAs */}
-          <div className="mt-6 flex flex-col sm:flex-row gap-2.5 justify-center">
-            <button
-              type="button"
-              onClick={() => {
-                setActiveOrderConfirmation(null);
-                setIsTrackOrderModalOpen(true);
-              }}
-              className="px-6 py-2.5 rounded-full bg-[#06201A] hover:bg-[#0B2B22] text-[#D4AF37] font-bold text-xs uppercase tracking-wider transition-all"
-            >
-              Track Order
-            </button>
-            <button
-              type="button"
-              onClick={() => downloadInvoicePdf(order)}
-              className="px-6 py-2.5 rounded-full bg-[#0B2B22] hover:bg-[#133F32] text-[#D4AF37] font-extrabold text-xs uppercase tracking-wider transition-all inline-flex items-center gap-1.5 border border-[#D4AF37]/50 shadow-sm cursor-pointer"
-            >
-              <Download className="w-4 h-4" />
-              <span>Download Invoice</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setActiveOrderConfirmation(null);
-                navigateTo('home');
-              }}
-              className="px-6 py-2.5 rounded-full bg-[#D4AF37] hover:bg-[#B8962E] text-[#06201A] font-extrabold text-xs uppercase tracking-wider transition-all inline-flex items-center gap-1.5 cursor-pointer"
-            >
-              <Home className="w-4 h-4" />
-              <span>হোমে ফিরে যান</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   // Ultra-Minimal Checkout View
   return (
     <div className="max-w-4xl mx-auto px-3 sm:px-5 pt-3 sm:pt-5 pb-16">
       {/* Return Button */}
       <button
         type="button"
-        onClick={() => navigateTo('home')}
+        onClick={() => goBack()}
         className="inline-flex items-center gap-1.5 text-xs font-bold text-[#06201A] hover:text-[#AA820A] mb-4 transition-colors cursor-pointer"
       >
         <ArrowLeft className="w-4 h-4" />

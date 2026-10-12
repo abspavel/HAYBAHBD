@@ -25,12 +25,20 @@ import {
   saveLocalIncompleteOrder,
 } from '../services/localAdminStore';
 import { supabase } from '../lib/supabase';
-import { parseProductFromUrl } from '../utils/urlHelper';
+import { parseProductFromUrl, getProductSlug } from '../utils/urlHelper';
 
 interface Toast {
   id: string;
   message: string;
   type?: 'success' | 'info' | 'warning';
+}
+
+interface HistoryEntry {
+  view: ViewType;
+  scrollY: number;
+  category?: string | null;
+  product?: Product | null;
+  search?: string;
 }
 
 interface ShopContextType {
@@ -102,6 +110,7 @@ interface ShopContextType {
     view: ViewType,
     params?: { category?: string; product?: Product; search?: string }
   ) => void;
+  goBack: () => void;
   showToast: (message: string, type?: 'success' | 'info') => void;
 }
 
@@ -136,12 +145,27 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   });
 
-  // Check URL pathname for /admin, /product/:id, /p/:id, or query ?p=
+  // Check URL pathname for /admin, /checkout, /cart, /product/:id, /p/:id, etc.
   const [currentView, setCurrentView] = useState<ViewType>(() => {
     if (typeof window !== 'undefined') {
       const path = window.location.pathname.toLowerCase();
       if (path === '/admin' || path.startsWith('/admin/')) {
         return 'admin';
+      }
+      if (path === '/checkout') {
+        return 'checkout';
+      }
+      if (path === '/cart') {
+        return 'cart';
+      }
+      if (path === '/thank-you') {
+        return 'thank-you';
+      }
+      if (path === '/wishlist') {
+        return 'wishlist';
+      }
+      if (path === '/shop') {
+        return 'shop';
       }
       if (path.startsWith('/product/') || path.startsWith('/p/')) {
         return 'product-detail';
@@ -171,6 +195,10 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isTrackOrderModalOpen, setIsTrackOrderModalOpen] = useState(false);
   const [activeOrderConfirmation, setActiveOrderConfirmation] = useState<OrderDetails | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
+
+  // Navigation History Stack & Scroll Memory for flawless back restoration
+  const navHistoryRef = React.useRef<HistoryEntry[]>([]);
+  const scrollPositionsRef = React.useRef<Record<string, number>>({});
 
   // Live Supabase Storefront Data - Instant load from cached state
   const [products, setProducts] = useState<Product[]>(() => {
@@ -240,7 +268,6 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const matched = parseProductFromUrl(liveProds);
           if (matched) {
             setSelectedProduct(matched);
-            setCurrentView('product-detail');
           }
         }
       }
@@ -327,14 +354,34 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const path = window.location.pathname.toLowerCase();
       if (path === '/admin' || path.startsWith('/admin/')) {
         setCurrentView('admin');
+      } else if (path === '/checkout') {
+        setCurrentView('checkout');
+      } else if (path === '/cart') {
+        setCurrentView('cart');
+      } else if (path === '/thank-you') {
+        setCurrentView('thank-you');
       } else if (path.startsWith('/product/') || path.startsWith('/p/')) {
         const prod = parseProductFromUrl(products);
         if (prod) {
           setSelectedProduct(prod);
           setCurrentView('product-detail');
         }
-      } else if (path === '/' || path === '') {
-        setCurrentView('home');
+      } else {
+        const last = navHistoryRef.current.pop();
+        const targetView = last?.view || (path === '/shop' ? 'shop' : 'home');
+        const targetScroll = last?.scrollY ?? (scrollPositionsRef.current[targetView] || 0);
+
+        if (last?.category !== undefined) {
+          setSelectedCategory(last.category);
+        }
+
+        setCurrentView(targetView);
+        requestAnimationFrame(() => {
+          window.scrollTo({ top: targetScroll, left: 0, behavior: 'instant' });
+          setTimeout(() => {
+            window.scrollTo({ top: targetScroll, left: 0, behavior: 'instant' });
+          }, 30);
+        });
       }
     };
 
@@ -574,6 +621,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     clearCart();
     setIsCartOpen(false);
     setCurrentView('thank-you');
+    window.history.pushState({}, '', '/thank-you');
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     return newOrder;
   };
@@ -582,7 +630,25 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     view: ViewType,
     params?: { category?: string; product?: Product; search?: string }
   ) => {
-    if (params?.category) {
+    // Record current scroll position before leaving view
+    if (typeof window !== 'undefined') {
+      const currentScroll = window.scrollY;
+      scrollPositionsRef.current[currentView] = currentScroll;
+      if (currentView !== view) {
+        navHistoryRef.current.push({
+          view: currentView,
+          scrollY: currentScroll,
+          category: selectedCategory,
+          product: selectedProduct,
+          search: searchQuery,
+        });
+        if (navHistoryRef.current.length > 25) {
+          navHistoryRef.current.shift();
+        }
+      }
+    }
+
+    if (params?.category !== undefined) {
       setSelectedCategory(params.category);
     }
     if (params?.product) {
@@ -592,20 +658,76 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSearchQuery(params.search);
     }
 
+    // When navigating to checkout, clear any previous order confirmation so checkout form shows
+    if (view === 'checkout') {
+      setActiveOrderConfirmation(null);
+    }
+
     if (view === 'admin') {
       window.history.pushState({}, '', '/admin');
     } else if (view === 'product-detail' && params?.product) {
-      const shortId = params.product.slug || params.product.id;
+      const shortId = getProductSlug(params.product);
       window.history.pushState({}, '', `/p/${encodeURIComponent(shortId)}`);
     } else if (view === 'home') {
       window.history.pushState({}, '', '/');
     } else if (view === 'shop') {
       window.history.pushState({}, '', '/shop');
+    } else if (view === 'checkout') {
+      window.history.pushState({}, '', '/checkout');
+    } else if (view === 'cart') {
+      window.history.pushState({}, '', '/cart');
+    } else if (view === 'thank-you') {
+      window.history.pushState({}, '', '/thank-you');
+    } else if (view === 'wishlist') {
+      window.history.pushState({}, '', '/wishlist');
+    } else if (view === 'account') {
+      window.history.pushState({}, '', '/account');
+    } else if (view === 'track-order') {
+      window.history.pushState({}, '', '/track-order');
     }
 
     setCurrentView(view);
-    // Instant scroll to top without scroll animation
+    // Instant scroll to top on fresh forward navigation
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  };
+
+  const goBack = () => {
+    const last = navHistoryRef.current.pop();
+    const targetView: ViewType = last?.view || 'home';
+    const targetScrollY = last?.scrollY ?? (scrollPositionsRef.current[targetView] || 0);
+
+    if (last?.category !== undefined) {
+      setSelectedCategory(last.category);
+    }
+    if (last?.search !== undefined) {
+      setSearchQuery(last.search);
+    }
+    if (targetView === 'product-detail' && last?.product) {
+      setSelectedProduct(last.product);
+    }
+
+    if (targetView === 'home') {
+      window.history.pushState({}, '', '/');
+    } else if (targetView === 'shop') {
+      window.history.pushState({}, '', '/shop');
+    } else if (targetView === 'admin') {
+      window.history.pushState({}, '', '/admin');
+    } else if (targetView === 'product-detail' && last?.product) {
+      const shortId = getProductSlug(last.product);
+      window.history.pushState({}, '', `/p/${encodeURIComponent(shortId)}`);
+    } else {
+      window.history.pushState({}, '', '/');
+    }
+
+    setCurrentView(targetView);
+
+    // Instant seamless scroll restoration directly to where user was
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: targetScrollY, left: 0, behavior: 'instant' });
+      setTimeout(() => {
+        window.scrollTo({ top: targetScrollY, left: 0, behavior: 'instant' });
+      }, 30);
+    });
   };
 
   return (
@@ -650,6 +772,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         checkCoupon,
         trackIncompleteOrder,
         navigateTo,
+        goBack,
         showToast,
       }}
     >

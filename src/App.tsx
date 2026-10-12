@@ -46,11 +46,6 @@ import { CheckCircle2, Info } from 'lucide-react';
 const MainContent: React.FC = () => {
   const { currentView, selectedProduct, toasts } = useShop();
 
-  // Ensure every page transition instantly loads directly from the top with no bottom-up scroll animation
-  React.useEffect(() => {
-    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-  }, [currentView]);
-
   // If in admin mode, render complete Admin Console without storefront chrome
   if (currentView === 'admin' || currentView === 'admin-login') {
     return <AdminRoot />;

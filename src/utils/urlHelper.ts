@@ -3,21 +3,34 @@ import { Product } from '../types';
 export const PRIMARY_DOMAIN = 'https://haybahbd.com';
 
 /**
+ * Returns clean sanitized slug for a product
+ */
+export function getProductSlug(product: Product): string {
+  if (product.slug && product.slug.trim()) {
+    return product.slug.trim().toLowerCase();
+  }
+  return product.name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || product.id;
+}
+
+/**
  * Returns a clean, short, canonical product share URL using the primary custom domain haybahbd.com.
- * Format: https://haybahbd.com/product/:id or /p/:id (with fallback query parameter support).
+ * Format: https://haybahbd.com/p/:slug
  */
 export function getProductShareUrl(product: Product): string {
-  const identifier = product.slug || product.id;
-  // Always use primary live domain haybahbd.com
-  return `${PRIMARY_DOMAIN}/product/${encodeURIComponent(identifier)}`;
+  const slug = getProductSlug(product);
+  return `${PRIMARY_DOMAIN}/p/${encodeURIComponent(slug)}`;
 }
 
 /**
  * Returns a short share URL using primary live domain haybahbd.com
+ * Format: https://haybahbd.com/p/:slug
  */
 export function getProductShortUrl(product: Product): string {
-  const identifier = product.slug || product.id;
-  return `${PRIMARY_DOMAIN}/p/${encodeURIComponent(identifier)}`;
+  const slug = getProductSlug(product);
+  return `${PRIMARY_DOMAIN}/p/${encodeURIComponent(slug)}`;
 }
 
 /**
@@ -67,11 +80,12 @@ export function parseProductFromUrl(
 
   const normalized = targetIdentifier.trim().toLowerCase();
 
-  // Find exact slug or ID match first
+  // Find exact slug, getProductSlug, or ID match first
   const match = products.find(
     (p) =>
       p.id.toLowerCase() === normalized ||
-      (p.slug && p.slug.toLowerCase() === normalized)
+      (p.slug && p.slug.toLowerCase() === normalized) ||
+      getProductSlug(p) === normalized
   );
 
   if (match) return match;
@@ -82,7 +96,8 @@ export function parseProductFromUrl(
       (p) =>
         p.id.toLowerCase().includes(normalized) ||
         (p.slug && p.slug.toLowerCase().includes(normalized)) ||
-        p.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').includes(normalized)
+        getProductSlug(p).includes(normalized) ||
+        p.name.toLowerCase().includes(normalized)
     ) || null
   );
 }

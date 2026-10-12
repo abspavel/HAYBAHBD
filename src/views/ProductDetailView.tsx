@@ -16,18 +16,41 @@ import { Product } from '../types';
 import { useShop } from '../context/ShopContext';
 import { ALL_PRODUCTS } from '../data/mockData';
 import { AutoSlideCarousel } from '../components/AutoSlideCarousel';
+import { getProductSlug } from '../utils/urlHelper';
 
 interface ProductDetailViewProps {
   product: Product;
 }
 
 export const ProductDetailView: React.FC<ProductDetailViewProps> = ({ product }) => {
-  const { addToCart, toggleWishlist, isInWishlist, navigateTo, showToast } = useShop();
+  const {
+    addToCart,
+    toggleWishlist,
+    isInWishlist,
+    navigateTo,
+    goBack,
+    showToast,
+    setActiveOrderConfirmation,
+  } = useShop();
 
-  const [selectedSize, setSelectedSize] = useState<string>(product.sizes[0] || 'L');
+  const [selectedSize, setSelectedSize] = useState<string>(product.sizes?.[0] || 'L');
   const [quantity, setQuantity] = useState<number>(1);
   const [showSizeGuide, setShowSizeGuide] = useState(false);
   const [activeTab, setActiveTab] = useState<'desc' | 'specs' | 'delivery'>('desc');
+
+  const galleryImages =
+    product.gallery && product.gallery.length > 0
+      ? product.gallery
+      : [product.image];
+  const [activeImage, setActiveImage] = useState<string>(product.image || galleryImages[0]);
+
+  // Sync state when product prop changes
+  React.useEffect(() => {
+    setActiveImage(product.image || (product.gallery && product.gallery[0]) || '');
+    if (product.sizes && product.sizes.length > 0) {
+      setSelectedSize(product.sizes[0]);
+    }
+  }, [product]);
 
   const wishlisted = isInWishlist(product.id);
 
@@ -48,10 +71,11 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({ product })
     const originalTitle = document.title;
     document.title = `${product.name} | HAYBAH Bangladesh - haybahbd.com`;
 
+    const slug = getProductSlug(product);
     // Update canonical link
     let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
     if (canonical) {
-      canonical.href = `https://haybahbd.com/p/${encodeURIComponent(product.slug || product.id)}`;
+      canonical.href = `https://haybahbd.com/p/${encodeURIComponent(slug)}`;
     }
 
     return () => {
@@ -62,24 +86,29 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({ product })
     };
   }, [product]);
 
-  const handleBuyNow = () => {
+  const handleAddToCart = () => {
     addToCart(product, selectedSize, quantity);
-    navigateTo('checkout');
+  };
+
+  const handleBuyNow = () => {
+    setActiveOrderConfirmation(null);
+    const added = addToCart(product, selectedSize, quantity);
+    if (added) {
+      navigateTo('checkout');
+    }
   };
 
   const handleShare = async () => {
-    // Generate clean short URL with haybahbd.com domain: https://haybahbd.com/p/:id
-    const shareUrl = `https://haybahbd.com/p/${encodeURIComponent(product.slug || product.id)}`;
-    const shareTitle = `${product.name} | HAYBAH Bangladesh`;
-    const shareText = `${product.name} – প্রিমিয়াম কোয়ালিটি ও আকর্ষণীয় অফার haybahbd.com-এ!`;
+    // Generate clean short URL with haybahbd.com domain: https://haybahbd.com/p/:slug
+    const slug = getProductSlug(product);
+    const shareUrl = `https://haybahbd.com/p/${slug}`;
 
     if (navigator.share) {
       try {
         await navigator.share({
-          title: shareTitle,
-          text: shareText,
           url: shareUrl,
         });
+        showToast('প্রোডাক্ট লিংক শেয়ার হয়েছে!');
         return;
       } catch (err: unknown) {
         // Ignore AbortError when user closes native share sheet
@@ -95,10 +124,10 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({ product })
         await navigator.clipboard.writeText(shareUrl);
         showToast('প্রোডাক্ট লিংক কপি হয়েছে: ' + shareUrl);
       } else {
-        showToast('প্রোডাক্ট লিংক: ' + shareUrl);
+        showToast(shareUrl);
       }
     } catch {
-      showToast('প্রোডাক্ট লিংক: ' + shareUrl);
+      showToast(shareUrl);
     }
   };
 
@@ -108,8 +137,8 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({ product })
       <div className="flex items-center justify-between py-2 mb-3 text-xs sm:text-sm">
         <button
           type="button"
-          onClick={() => navigateTo('home')}
-          className="inline-flex items-center gap-1.5 font-bold text-[#06201A] hover:text-[#AA820A] transition-colors"
+          onClick={goBack}
+          className="inline-flex items-center gap-1.5 font-bold text-[#06201A] hover:text-[#AA820A] transition-colors cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Back to Catalog</span>
@@ -126,7 +155,7 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({ product })
         <div className="md:col-span-6 flex flex-col gap-3">
           <div className="relative aspect-4/5 w-full rounded-2xl bg-neutral-900 overflow-hidden border border-gray-100 shadow-xs">
             <img
-              src={product.image}
+              src={activeImage || product.image}
               alt={product.name}
               className="w-full h-full object-cover object-center transition-all duration-300"
               decoding="async"
@@ -154,7 +183,7 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({ product })
               <button
                 type="button"
                 onClick={() => toggleWishlist(product.id)}
-                className={`w-10 h-10 rounded-full bg-white/95 backdrop-blur-xs flex items-center justify-center shadow-md transition-transform hover:scale-110 active:scale-95 ${
+                className={`w-10 h-10 rounded-full bg-white/95 backdrop-blur-xs flex items-center justify-center shadow-md transition-transform hover:scale-110 active:scale-95 cursor-pointer ${
                   wishlisted ? 'text-[#D4AF37]' : 'text-gray-600'
                 }`}
                 title="Wishlist"
@@ -169,7 +198,7 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({ product })
               <button
                 type="button"
                 onClick={handleShare}
-                className="w-10 h-10 rounded-full bg-white/95 backdrop-blur-xs flex items-center justify-center shadow-md text-gray-600 hover:text-[#06201A] transition-transform hover:scale-110"
+                className="w-10 h-10 rounded-full bg-white/95 backdrop-blur-xs flex items-center justify-center shadow-md text-gray-600 hover:text-[#06201A] transition-transform hover:scale-110 cursor-pointer"
                 title="Share"
               >
                 <Share2 className="w-4 h-4" />
@@ -178,18 +207,24 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({ product })
           </div>
 
           {/* Micro Thumbnails Bar */}
-          <div className="flex items-center gap-2">
-            {[1, 2, 3].map((idx) => (
-              <div
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+            {galleryImages.map((imgUrl, idx) => (
+              <button
                 key={idx}
-                className="w-16 h-20 rounded-xl overflow-hidden border-2 border-[#D4AF37] bg-neutral-900 cursor-pointer shadow-xs"
+                type="button"
+                onClick={() => setActiveImage(imgUrl)}
+                className={`w-16 h-20 rounded-xl overflow-hidden border-2 transition-all cursor-pointer bg-neutral-900 shadow-xs shrink-0 ${
+                  activeImage === imgUrl
+                    ? 'border-[#D4AF37] ring-2 ring-[#D4AF37]/50 scale-102'
+                    : 'border-gray-200 hover:border-gray-400 opacity-80 hover:opacity-100'
+                }`}
               >
                 <img
-                  src={product.image}
-                  alt={`Thumbnail ${idx}`}
+                  src={imgUrl}
+                  alt={`Thumbnail ${idx + 1}`}
                   className="w-full h-full object-cover"
                 />
-              </div>
+              </button>
             ))}
           </div>
         </div>
@@ -353,7 +388,7 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({ product })
                 <>
                   <button
                     type="button"
-                    onClick={() => addToCart(product, selectedSize, quantity)}
+                    onClick={handleAddToCart}
                     className="flex-1 py-3.5 rounded-xl bg-[#D4AF37] hover:bg-[#B8962E] text-[#06201A] font-extrabold text-xs sm:text-sm uppercase tracking-wider shadow-md transition-all flex items-center justify-center gap-2 active:scale-98 cursor-pointer"
                   >
                     <ShoppingBag className="w-4 h-4" />

@@ -10,7 +10,7 @@ interface ListingViewProps {
 }
 
 export const ListingView: React.FC<ListingViewProps> = ({ viewType }) => {
-  const { navigateTo, selectedCategory, searchQuery, products, categories } = useShop();
+  const { navigateTo, goBack, selectedCategory, searchQuery, products, categories } = useShop();
 
   const allProds = (products && products.length > 0 ? products : ALL_PRODUCTS).filter(
     (p) => p.isActive !== false
@@ -121,9 +121,9 @@ export const ListingView: React.FC<ListingViewProps> = ({ viewType }) => {
         <div className="flex items-center gap-2.5">
           <button
             type="button"
-            onClick={() => navigateTo('home')}
-            className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-600 hover:text-[#06201A] hover:border-gray-400 transition-colors shrink-0"
-            title="Back to Home"
+            onClick={goBack}
+            className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-600 hover:text-[#06201A] hover:border-gray-400 transition-colors shrink-0 cursor-pointer"
+            title="Back"
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
