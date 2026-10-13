@@ -144,7 +144,7 @@ export const ALL_PRODUCTS: Product[] = [
     rating: 5,
     reviewsCount: 18,
     image: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=800&q=80',
-    description: 'High-density 420 GSM French terry fleece hoodie with metallic gold chest embroidery and custom relaxed shoulder drape. Designed for premium streetwear layering.',
+    description: 'High-density 420 GSM French terry fleece hoodie with metallic gold chest embroidery and custom relaxed shoulder drape. Designed for premium menswear layering.',
     sizes: ['M', 'L', 'XL', 'XXL'],
     fabric: '420 GSM French Terry Fleece',
     gsm: 420,
@@ -915,7 +915,7 @@ export const TESTIMONIALS: Testimonial[] = [
   {
     id: 't-3',
     rating: 5,
-    text: "HAYBAH has set a new standard for streetwear in Bangladesh. The Y2K jersey quality beats international brands. Cash on delivery was seamless.",
+    text: "HAYBAH has set a new standard for men's fashion in Bangladesh. The Y2K jersey quality beats international brands. Cash on delivery was seamless.",
     name: 'Mahir Faisal',
     city: 'Customer from Chittagong',
   },
@@ -929,7 +929,7 @@ export const TESTIMONIALS: Testimonial[] = [
   {
     id: 't-5',
     rating: 5,
-    text: "Finally an authentic streetwear label that pays attention to Islamic calligraphy and modest oversized drape. Excellent customer support on WhatsApp too.",
+    text: "Finally an authentic men's clothing label that pays attention to Islamic calligraphy and premium elegant drape. Excellent customer support on WhatsApp too.",
     name: 'Farhana Rahman',
     city: 'Customer from Khulna',
   },

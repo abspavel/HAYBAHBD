@@ -65,7 +65,7 @@ export const CartDrawer: React.FC = () => {
           {/* Delivery Notice */}
           <div className="bg-[#FAF7EC] px-4 py-2 border-b border-[#D4AF37]/20 flex items-center justify-between text-xs text-[#06201A]">
             <span className="font-semibold text-gray-700">
-              Delivery: <strong className="text-[#06201A]">Inside Dhaka ৳80</strong> | <strong className="text-[#06201A]">Outside Dhaka ৳120</strong>
+              Delivery: <strong className="text-[#06201A]">Inside Dhaka ৳80</strong> | <strong className="text-[#06201A]">Outside Dhaka ৳130</strong>
             </span>
             <span className="font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded text-[10px]">
               Cash on Delivery
@@ -83,7 +83,7 @@ export const CartDrawer: React.FC = () => {
                   Your cart is empty
                 </h3>
                 <p className="text-xs text-gray-500 mb-6">
-                  Explore our premium hoodies, jerseys, and streetwear collections.
+                  Explore our premium hoodies, shirts, and men's apparel collections.
                 </p>
                 <button
                   type="button"

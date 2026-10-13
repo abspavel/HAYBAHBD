@@ -33,9 +33,9 @@ export const ListingView: React.FC<ListingViewProps> = ({ viewType }) => {
         };
       case 'featured':
         return {
-          title: 'FEATURED DROPS',
+          title: 'FEATURED PRODUCTS',
           items: allProds.filter((p) => p.isFeatured),
-          showCategoryTabs: true,
+          showCategoryTabs: false,
         };
       case 'new-arrival':
         return {

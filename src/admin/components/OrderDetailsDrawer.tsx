@@ -77,7 +77,7 @@ export const OrderDetailsDrawer: React.FC<OrderDetailsDrawerProps> = ({
           <div class="header">
             <div>
               <div class="brand">HAYBAH</div>
-              <p style="font-size: 12px; color: #555; margin: 4px 0;">Premium Streetwear & Contemporary Apparel</p>
+              <p style="font-size: 12px; color: #555; margin: 4px 0;">Premium Men's Clothing & Contemporary Apparel</p>
               <p style="font-size: 12px; color: #555; margin: 0;">Helpline: +880 1642-247530</p>
             </div>
             <div style="text-align: right;">

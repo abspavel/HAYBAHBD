@@ -21,8 +21,8 @@ export const BlogView: React.FC = () => {
     {
       id: 'winter-2026-hoodies',
       category: 'Trend',
-      title: 'Winter 2026: Why Heavyweight 420 GSM Streetwear Rules Bangladesh',
-      excerpt: 'Explore why modern streetwear connoisseurs are shifting away from cheap blended fleece to heavyweight French Terry this winter.',
+      title: "Winter 2026: Why Heavyweight 420 GSM Men's Apparel Rules Bangladesh",
+      excerpt: "Explore why modern men's fashion connoisseurs are shifting away from cheap blended fleece to heavyweight French Terry this winter.",
       date: 'October 2026',
       readTime: '4 min read',
       content: [
@@ -41,7 +41,7 @@ export const BlogView: React.FC = () => {
       content: [
         'Y2K athletic aesthetics are more than nostalgic throwbacks — they represent high-energy youth expression and speed-inspired typography.',
         'To style a HAYBAH Y2K Jersey properly, keep the proportions balanced: opt for relaxed-fit carpenter denim or structured tactical cargos that match the jersey’s broad shoulder seams.',
-        'Footwear choices like retro skate shoes or chunky runner sneakers anchor the sporty aesthetic, while minimalist gold jewelry bridges vintage athletics with luxury street culture.',
+        'Footwear choices like retro skate shoes or chunky runner sneakers anchor the sporty aesthetic, while minimalist gold jewelry bridges vintage athletics with luxury men\'s style.',
       ],
     },
     {
@@ -60,7 +60,7 @@ export const BlogView: React.FC = () => {
     {
       id: 'shacket-layering',
       category: 'Styling',
-      title: 'The Art of Shacket Layering: Transitional Streetwear',
+      title: "The Art of Shacket Layering: Transitional Men's Styling",
       excerpt: 'Mastering the hybrid shirt-jacket for effortless transitional weather layering in Dhaka and Chittagong.',
       date: 'July 2026',
       readTime: '3 min read',

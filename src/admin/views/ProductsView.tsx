@@ -353,7 +353,7 @@ export const ProductsView: React.FC = () => {
               isNewArrival: true,
               isHot: false,
               isFlashSale: false,
-              description: 'Heavyweight streetwear piece crafted for superior warmth and luxury draping.',
+              description: "Heavyweight men's apparel piece crafted for superior warmth and luxury draping.",
               sku: `HYB-${Math.floor(1000 + Math.random() * 9000)}`,
               image: '',
               gallery: [],

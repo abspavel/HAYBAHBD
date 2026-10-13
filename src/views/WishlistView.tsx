@@ -35,7 +35,7 @@ export const WishlistView: React.FC = () => {
           My Wishlist
         </h1>
         <p className="text-xs sm:text-sm text-gray-500 mt-1">
-          Save your favorite streetwear pieces and order whenever you are ready.
+          Save your favorite men's apparel pieces and order whenever you are ready.
         </p>
       </div>
 
@@ -51,7 +51,7 @@ export const WishlistView: React.FC = () => {
             onClick={() => navigateTo('shop')}
             className="px-6 py-2.5 rounded-full bg-[#D4AF37] hover:bg-[#B8962E] text-[#06201A] font-extrabold text-xs uppercase tracking-wider shadow-sm transition-all"
           >
-            Explore Streetwear
+            Explore Collection
           </button>
         </div>
       ) : (

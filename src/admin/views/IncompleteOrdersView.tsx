@@ -277,7 +277,7 @@ export const IncompleteOrdersView: React.FC<IncompleteOrdersViewProps> = ({
                 filtered.map((inc) => {
                   const cleanPhone = inc.phone.replace(/[^0-9]/g, '');
                   const bdBareNumber = cleanPhone.slice(-10);
-                  const whatsappMsg = `Hello ${inc.customerName || 'Customer'}, you left some premium streetwear items in your HAYBAH bag! Would you like us to confirm and dispatch your order today?`;
+                  const whatsappMsg = `Hello ${inc.customerName || 'Customer'}, you left some premium apparel items in your HAYBAH bag! Would you like us to confirm and dispatch your order today?`;
                   const whatsappUrl = `https://wa.me/880${bdBareNumber}?text=${encodeURIComponent(
                     whatsappMsg
                   )}`;

@@ -55,7 +55,7 @@ export const OurStoryView: React.FC = () => {
           </p>
 
           <p>
-            When we founded HAYBAH, we observed that conventional streetwear was increasingly saturated with fleeting trends that lacked depth. We set out to build garments that honor heritage while pioneering modern, boxy, relaxed cuts that empower the youth of today.
+            When we founded HAYBAH, we observed that conventional fast fashion was increasingly saturated with fleeting trends that lacked depth. We set out to build garments that honor heritage while precision-tailoring slim and regular fit apparel designed to elevate everyday men's style with timeless sophistication.
           </p>
         </div>
 

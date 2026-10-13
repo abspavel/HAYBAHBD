@@ -33,7 +33,7 @@ export const AboutUsView: React.FC = () => {
           </h1>
 
           <p className="text-xs sm:text-sm text-gray-200 leading-relaxed">
-            HAYBAH is not just what you wear — it’s who you are in the moment. We engineer contemporary streetwear and luxury silhouettes for individuals who move with quiet confidence, dignity, and unapologetic presence.
+            HAYBAH is crafted for those who value timeless elegance and everyday confidence. We specialize in precision-tailored slim and regular fit apparel designed to elevate your daily style with effortless sophistication.
           </p>
         </div>
       </div>
