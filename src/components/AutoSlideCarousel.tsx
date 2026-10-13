@@ -103,9 +103,9 @@ export const AutoSlideCarousel: React.FC<AutoSlideCarouselProps> = ({
         type="button"
         aria-label="Previous products"
         onClick={prevSlide}
-        className="absolute -left-2.5 sm:-left-3.5 top-1/2 -translate-y-1/2 z-20 w-8 sm:w-9 h-8 sm:h-9 rounded-full bg-white/95 text-[#06201A] hover:bg-[#D4AF37] hover:text-[#06201A] shadow-md flex items-center justify-center transition-all duration-200 active:scale-90 border border-gray-200/80"
+        className="absolute -left-2.5 sm:-left-3.5 lg:-left-5 top-1/2 -translate-y-1/2 z-20 w-8 sm:w-9 lg:w-10 h-8 sm:h-9 lg:h-10 rounded-full bg-white/95 text-[#06201A] hover:bg-[#D4AF37] hover:text-[#06201A] shadow-md hover:shadow-lg flex items-center justify-center transition-all duration-200 active:scale-90 border border-gray-200/80 cursor-pointer"
       >
-        <ChevronLeft className="w-5 h-5" />
+        <ChevronLeft className="w-5 h-5 lg:w-6 lg:h-6" />
       </button>
 
       {/* Right Navigation Arrow */}
@@ -113,9 +113,9 @@ export const AutoSlideCarousel: React.FC<AutoSlideCarouselProps> = ({
         type="button"
         aria-label="Next products"
         onClick={nextSlide}
-        className="absolute -right-2.5 sm:-right-3.5 top-1/2 -translate-y-1/2 z-20 w-8 sm:w-9 h-8 sm:h-9 rounded-full bg-white/95 text-[#06201A] hover:bg-[#D4AF37] hover:text-[#06201A] shadow-md flex items-center justify-center transition-all duration-200 active:scale-90 border border-gray-200/80"
+        className="absolute -right-2.5 sm:-right-3.5 lg:-right-5 top-1/2 -translate-y-1/2 z-20 w-8 sm:w-9 lg:w-10 h-8 sm:h-9 lg:h-10 rounded-full bg-white/95 text-[#06201A] hover:bg-[#D4AF37] hover:text-[#06201A] shadow-md hover:shadow-lg flex items-center justify-center transition-all duration-200 active:scale-90 border border-gray-200/80 cursor-pointer"
       >
-        <ChevronRight className="w-5 h-5" />
+        <ChevronRight className="w-5 h-5 lg:w-6 lg:h-6" />
       </button>
 
       {/* Overflow Container */}

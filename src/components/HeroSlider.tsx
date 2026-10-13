@@ -113,7 +113,7 @@ export const HeroSlider: React.FC = () => {
         - Non-clickable: clicking does NOT navigate anywhere
         - Pure image: no dots, no arrows, no text overlays
       */}
-      <div className="relative w-full h-[160px] xs:h-[190px] sm:h-[260px] md:h-[340px] lg:h-[420px] max-h-[460px] overflow-hidden bg-[#041511]">
+      <div className="relative w-full h-[160px] xs:h-[190px] sm:h-[260px] md:h-[340px] lg:h-[440px] xl:h-[500px] 2xl:h-[540px] max-h-[560px] overflow-hidden bg-[#041511]">
         {slides.map((slide, idx) => {
           const isCurrent = idx === currentIndex;
           const isPrev = idx === prevIndex;
