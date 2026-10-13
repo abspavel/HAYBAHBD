@@ -67,7 +67,7 @@ export const DeliveryInfoView: React.FC = () => {
             <h3 className="font-extrabold text-base text-[#06201A]">Outside Dhaka</h3>
           </div>
           <div className="mb-4">
-            <span className="text-3xl font-black text-[#06201A] font-brand">৳120</span>
+            <span className="text-3xl font-black text-[#06201A] font-brand">৳130</span>
             <span className="text-xs text-gray-500 font-semibold ml-1">Delivery Charge</span>
           </div>
           <div className="space-y-2 text-xs text-gray-600 border-t border-gray-100 pt-3">

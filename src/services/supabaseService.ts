@@ -429,7 +429,7 @@ export async function fetchLiveSiteSettings(): Promise<SiteSettings> {
           data.marquee_text ||
           'FREE SHIPPING ON ORDERS OVER ৳2000! | CASH ON DELIVERY AVAILABLE ALL OVER BANGLADESH | 7-DAY EXCHANGE POLICY',
         shippingInsideDhaka: Number(data.shipping_inside_dhaka ?? 80),
-        shippingOutsideDhaka: Number(data.shipping_outside_dhaka ?? 120),
+        shippingOutsideDhaka: Number(data.shipping_outside_dhaka ?? 130),
       };
       try {
         localStorage.setItem('haybah_admin_settings', JSON.stringify(mapped));

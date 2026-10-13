@@ -16,12 +16,12 @@ export const HowToOrderView: React.FC = () => {
       num: '02',
       title: 'Choose Size & Add to Cart',
       desc: 'Pick your preferred fit (M, L, XL, XXL) from the product details view and click "ADD TO CART" or instant "BUY NOW".',
-      tip: 'Our streetwear pieces feature a contemporary relaxed boxy silhouette.',
+      tip: 'Our menswear pieces feature a contemporary precision-tailored silhouette.',
     },
     {
       num: '03',
       title: 'Fill Out Minimal Checkout Form',
-      desc: 'Simply provide your Name, Mobile Number, Full Address, District/City, and Thana. Delivery fee (৳80 Inside Dhaka / ৳120 Outside Dhaka) calculates automatically.',
+      desc: 'Simply provide your Name, Mobile Number, Full Address, District/City, and Thana. Delivery fee (৳80 Inside Dhaka / ৳130 Outside Dhaka) calculates automatically.',
       tip: 'No password or mandatory account registration required — finish in 30 seconds.',
     },
     {
@@ -100,7 +100,7 @@ export const HowToOrderView: React.FC = () => {
             <Truck className="w-4 h-4 text-[#D4AF37]" />
             <span>Outside Dhaka (Nationwide)</span>
           </h4>
-          <p className="text-xs text-gray-600">Delivery Fee: <strong className="text-gray-900">৳120</strong></p>
+          <p className="text-xs text-gray-600">Delivery Fee: <strong className="text-gray-900">৳130</strong></p>
           <p className="text-[11px] text-gray-500 mt-1">Timeline: 48 to 72 hours across 64 districts & thanas</p>
         </div>
       </div>
@@ -108,10 +108,10 @@ export const HowToOrderView: React.FC = () => {
       {/* CTA Box */}
       <div className="p-8 rounded-3xl bg-gradient-to-r from-[#06201A] to-[#0B2B22] text-white text-center space-y-4">
         <h3 className="text-lg sm:text-xl font-black font-brand text-[#FFF3B0]">
-          Ready to Elevate Your Streetwear Collection?
+          Ready to Elevate Your Everyday Style?
         </h3>
         <p className="text-xs text-gray-300 max-w-md mx-auto">
-          Explore the authentic heavyweight drops now with complete Cash on Delivery.
+          Explore our precision-tailored menswear collection now with complete Cash on Delivery.
         </p>
         <button
           type="button"

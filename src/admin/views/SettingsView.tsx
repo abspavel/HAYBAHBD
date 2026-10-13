@@ -29,7 +29,7 @@ export const SettingsView: React.FC = () => {
     marqueeText:
       'FREE SHIPPING ON ORDERS OVER ৳2000! | CASH ON DELIVERY AVAILABLE ALL OVER BANGLADESH | 7-DAY EXCHANGE POLICY',
     shippingInsideDhaka: 80,
-    shippingOutsideDhaka: 120,
+    shippingOutsideDhaka: 130,
   });
 
   const [savingSettings, setSavingSettings] = useState(false);

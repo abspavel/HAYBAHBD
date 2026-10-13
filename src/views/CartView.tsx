@@ -45,7 +45,7 @@ export const CartView: React.FC = () => {
   };
 
   const deliveryInsideDhaka = 80;
-  const deliveryOutsideDhaka = 120;
+  const deliveryOutsideDhaka = 130;
   const finalSubtotalWithDiscount = Math.max(0, subtotal - discountAmount);
 
   return (
@@ -104,7 +104,7 @@ export const CartView: React.FC = () => {
               onClick={() => navigateTo('shop')}
               className="w-full sm:w-auto px-7 py-3 rounded-full bg-[#D4AF37] hover:bg-[#B8962E] text-[#06201A] font-extrabold text-xs sm:text-sm uppercase tracking-wider shadow-sm transition-all duration-200 active:scale-95 cursor-pointer flex items-center justify-center gap-2"
             >
-              <span>Explore Streetwear</span>
+              <span>Explore Men's Collection</span>
               <ArrowRight className="w-4 h-4" />
             </button>
             <button
@@ -130,7 +130,7 @@ export const CartView: React.FC = () => {
                     Fast Delivery Available Across Bangladesh
                   </p>
                   <p className="text-gray-300 text-[11px]">
-                    Inside Dhaka ৳80 (24-48 Hours) • Outside Dhaka ৳120 (48-72 Hours)
+                    Inside Dhaka ৳80 (24-48 Hours) • Outside Dhaka ৳130 (48-72 Hours)
                   </p>
                 </div>
               </div>

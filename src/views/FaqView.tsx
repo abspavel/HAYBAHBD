@@ -27,7 +27,7 @@ export const FaqView: React.FC = () => {
     {
       category: 'Delivery',
       q: 'What are the delivery charges inside and outside Dhaka?',
-      a: 'Delivery inside Dhaka is ৳80 (delivered within 24 to 48 hours). Delivery outside Dhaka across all 64 districts is ৳120 (delivered within 48 to 72 hours).',
+      a: 'Delivery inside Dhaka is ৳80 (delivered within 24 to 48 hours). Delivery outside Dhaka across all 64 districts is ৳130 (delivered within 48 to 72 hours).',
     },
     {
       category: 'Delivery',

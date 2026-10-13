@@ -208,7 +208,7 @@ export const CartDrawer: React.FC = () => {
                 <div className="flex justify-between">
                   <span>Delivery Charge</span>
                   <span className="font-semibold text-gray-800">
-                    ৳80 (Inside Dhaka) / ৳120 (Outside Dhaka)
+                    ৳80 (Inside Dhaka) / ৳130 (Outside Dhaka)
                   </span>
                 </div>
 

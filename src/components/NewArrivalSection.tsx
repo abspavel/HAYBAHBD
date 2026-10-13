@@ -32,7 +32,7 @@ export const NewArrivalSection: React.FC = () => {
                 NEW ARRIVALS COLLECTION
               </h3>
               <p className="text-xs text-gray-300 mt-1 max-w-xl">
-                Discover our latest seasonal drops and newly arrived premium streetwear collection. Fresh styles added regularly.
+                Discover our latest seasonal drops and newly arrived premium menswear collection. Fresh styles added regularly.
               </p>
             </div>
 

@@ -37,7 +37,7 @@ export const TermsView: React.FC = () => {
             1. General Terms
           </h2>
           <p>
-            By accessing and placing orders on the HAYBAH platform, you agree to comply with our terms and operational guidelines. Our streetwear apparel is crafted for personal wear and lifestyle expression.
+            By accessing and placing orders on the HAYBAH platform, you agree to comply with our terms and operational guidelines. Our menswear apparel is crafted for personal wear and lifestyle expression.
           </p>
         </section>
 
@@ -51,7 +51,7 @@ export const TermsView: React.FC = () => {
           <ul className="list-disc list-inside space-y-1 text-gray-600 pl-2">
             <li>No advance payment or digital pre-authorization is required at checkout.</li>
             <li>You may verify your package upon delivery before paying the full invoice amount in cash.</li>
-            <li>Delivery charges apply at ৳80 inside Dhaka and ৳120 outside Dhaka nationwide.</li>
+            <li>Delivery charges apply at ৳80 inside Dhaka and ৳130 outside Dhaka nationwide.</li>
           </ul>
         </section>
 

@@ -1,77 +1,31 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { ArrowUpRight } from 'lucide-react';
 import { ALL_PRODUCTS } from '../data/mockData';
 import { AutoSlideCarousel } from './AutoSlideCarousel';
 import { useShop } from '../context/ShopContext';
 
 export const FeaturedProductsSection: React.FC = () => {
-  const { navigateTo, products, categories } = useShop();
-  const [activeTab, setActiveTab] = useState<string>('ALL');
-
-  const allCats = categories && categories.length > 0 ? categories : [];
-  const dynamicCategoryTabs = allCats
-    .filter((c) => c.isActive !== false)
-    .slice(0, 7)
-    .map((c) => c.name.toUpperCase());
-
-  const tabs = [
-    'ALL',
-    ...(dynamicCategoryTabs.length > 0
-      ? dynamicCategoryTabs
-      : ['HOODIE', 'Y2K JERSEY', 'SWEATSHIRT', 'DROP SHOULDER', 'CARGO & PANTS', 'ETHNIC']),
-  ];
+  const { navigateTo, products } = useShop();
 
   const allProds = products && products.length > 0 ? products : ALL_PRODUCTS;
 
-  // Filter products by selected tab
-  const featuredProducts = allProds.filter((p) => {
-    if (p.isActive === false) return false;
-    if (activeTab === 'ALL') return p.isFeatured;
-    const cat = (p.category || '').toLowerCase();
-    const tabLower = activeTab.toLowerCase();
-    return (
-      cat === tabLower ||
-      cat.includes(tabLower) ||
-      tabLower.includes(cat) ||
-      (p.categorySlug && p.categorySlug.toLowerCase().includes(tabLower.replace(/[^a-z0-9]+/g, '-')))
-    );
-  });
+  // Filter featured products
+  const featuredProducts = allProds.filter((p) => p.isActive !== false && p.isFeatured);
+  const displayProducts = featuredProducts.length > 0 ? featuredProducts : allProds.slice(0, 10);
 
   return (
     <section className="py-8 px-3 sm:px-4 max-w-7xl mx-auto">
       {/* Gold Pill Title Header */}
-      <div className="flex flex-col items-center justify-center text-center mb-5">
+      <div className="flex flex-col items-center justify-center text-center mb-6">
         <div className="inline-block px-7 py-2 rounded-full bg-[#D4AF37] text-[#06201A] font-black text-sm sm:text-base uppercase tracking-wider shadow-sm">
           FEATURED PRODUCTS
-        </div>
-
-        {/* Category Tab Pills */}
-        <div className="mt-4 flex items-center justify-center gap-2 flex-wrap max-w-xl">
-          {tabs.map((tab) => {
-            const isActive = activeTab === tab;
-            return (
-              <button
-                key={tab}
-                type="button"
-                onClick={() => setActiveTab(tab)}
-                className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase transition-all duration-200 cursor-pointer ${
-                  isActive
-                    ? 'border-2 border-[#06201A] bg-[#06201A] text-[#D4AF37] shadow-sm'
-                    : 'border border-gray-300 bg-white text-gray-700 hover:border-[#D4AF37] hover:text-[#06201A]'
-                }`}
-              >
-                {tab}
-              </button>
-            );
-          })}
         </div>
       </div>
 
       {/* Auto-Sliding Product Carousel */}
       <div className="mt-2">
         <AutoSlideCarousel
-          key={activeTab} // Reset index smoothly when tab changes
-          products={featuredProducts.length > 0 ? featuredProducts : ALL_PRODUCTS.slice(0, 8)}
+          products={displayProducts}
           autoSlideInterval={3600}
         />
       </div>

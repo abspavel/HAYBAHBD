@@ -40,8 +40,8 @@ export const CheckoutModal: React.FC = () => {
   const [checkingCoupon, setCheckingCoupon] = useState(false);
 
   const { subtotal } = getCartTotal();
-  // Delivery charge: Inside Dhaka 80 Tk, Outside Dhaka 120 Tk
-  const deliveryFee = deliveryZone === 'Inside Dhaka' ? 80 : 120;
+  // Delivery charge: Inside Dhaka 80 Tk, Outside Dhaka 130 Tk
+  const deliveryFee = deliveryZone === 'Inside Dhaka' ? 80 : 130;
   const totalPayable = Math.max(0, subtotal - discountAmount) + deliveryFee;
 
   // Bangladesh phone validation: ^(\+?88)?01[3-9][0-9]{8}$
@@ -295,7 +295,7 @@ export const CheckoutModal: React.FC = () => {
                   </div>
                   <div className="mt-2 flex items-baseline justify-between">
                     <span className="text-[11px] text-gray-500">Home Delivery</span>
-                    <span className="font-black text-sm text-[#AA820A]">৳120</span>
+                    <span className="font-black text-sm text-[#AA820A]">৳130</span>
                   </div>
                 </div>
               </div>

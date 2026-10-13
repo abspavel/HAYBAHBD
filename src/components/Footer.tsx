@@ -19,9 +19,9 @@ export const Footer: React.FC = () => {
             </div>
           </div>
 
-          {/* Brand Description (STRICTLY NO "Clothing") */}
+          {/* Brand Description */}
           <p className="text-xs sm:text-sm text-gray-300 leading-relaxed max-w-md">
-            HAYBAH is not just what you wear — it’s who you are in the moment. We create streetwear and contemporary apparel for those who lead with energy and edge.
+            HAYBAH is crafted for those who value timeless elegance and everyday confidence. We specialize in precision-tailored slim and regular fit apparel designed to elevate your daily style with effortless sophistication.
           </p>
 
           {/* Connect With Us Box matching Screenshot 7 */}

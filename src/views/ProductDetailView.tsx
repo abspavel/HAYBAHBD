@@ -291,7 +291,7 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({ product })
               <div className="flex items-center gap-2">
                 <Truck className="w-4 h-4 text-[#D4AF37] shrink-0" />
                 <span>
-                  Delivery Charge: <strong className="text-[#06201A]">Inside Dhaka ৳80</strong> | <strong className="text-[#06201A]">Outside Dhaka ৳120</strong>
+                  Delivery Charge: <strong className="text-[#06201A]">Inside Dhaka ৳80</strong> | <strong className="text-[#06201A]">Outside Dhaka ৳130</strong>
                 </span>
               </div>
               <span className="font-bold text-emerald-700 text-[11px] bg-emerald-50 px-2 py-0.5 rounded shrink-0">
@@ -503,7 +503,7 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({ product })
           {activeTab === 'delivery' && (
             <div className="space-y-2 text-gray-700">
               <p>• <strong>Inside Dhaka:</strong> Delivery fee ৳80 (Doorstep delivery within 24 to 48 hours).</p>
-              <p>• <strong>Outside Dhaka:</strong> Delivery fee ৳120 (Doorstep delivery within 48 to 72 hours across 64 districts).</p>
+              <p>• <strong>Outside Dhaka:</strong> Delivery fee ৳130 (Doorstep delivery within 48 to 72 hours across 64 districts).</p>
               <p>• <strong>Payment Method:</strong> 100% Cash on Delivery — pay only after inspecting your parcel.</p>
             </div>
           )}

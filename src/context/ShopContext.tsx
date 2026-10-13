@@ -564,7 +564,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { subtotal } = getCartTotal();
     const deliveryFee =
       formData.city === 'Outside Dhaka'
-        ? siteSettings.shippingOutsideDhaka || 120
+        ? siteSettings.shippingOutsideDhaka || 130
         : siteSettings.shippingInsideDhaka || 80;
     const discount = formData.discount || 0;
     const total = Math.max(0, subtotal - discount) + deliveryFee;
