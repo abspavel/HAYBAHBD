@@ -75,7 +75,7 @@ interface ShopContextType {
   setIsTrackOrderModalOpen: (open: boolean) => void;
   setActiveOrderConfirmation: (order: OrderDetails | null) => void;
 
-  addToCart: (product: Product, size?: string, quantity?: number) => boolean;
+  addToCart: (product: Product, size?: string, quantity?: number, color?: string) => boolean;
   removeFromCart: (cartItemId: string) => void;
   updateCartQuantity: (cartItemId: string, quantity: number) => void;
   clearCart: () => void;
@@ -94,6 +94,7 @@ interface ShopContextType {
     couponCode?: string;
     discount?: number;
     notes?: string;
+    skipNavigation?: boolean;
   }) => Promise<OrderDetails>;
 
   checkCoupon: (code: string) => Promise<{ valid: boolean; discount: number; message: string }>;
@@ -430,7 +431,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, 2800);
   };
 
-  const addToCart = (product: Product, size = 'L', quantity = 1): boolean => {
+  const addToCart = (product: Product, size = 'L', quantity = 1, color?: string): boolean => {
     // Check out of stock guard
     if (!product.inStock || (product.stockQuantity !== undefined && product.stockQuantity <= 0)) {
       showToast(`${product.name} is currently out of stock.`, 'info');
@@ -438,13 +439,16 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     const defaultSize = size || product.sizes[0] || 'Regular';
-    const cartItemId = `${product.id}-${defaultSize}`;
+    const defaultColor = color || (product.colors && product.colors[0]) || 'Standard';
+    const cartItemId = `${product.id}-${defaultSize}-${defaultColor}`;
 
     setCart((prev) => {
-      const existing = prev.find((item) => item.id === cartItemId);
+      const existing = prev.find(
+        (item) => item.id === cartItemId || (item.productId === product.id && item.selectedSize === defaultSize && item.selectedColor === defaultColor)
+      );
       if (existing) {
         return prev.map((item) =>
-          item.id === cartItemId ? { ...item, quantity: item.quantity + quantity } : item
+          item.id === existing.id ? { ...item, quantity: item.quantity + quantity } : item
         );
       }
       return [
@@ -454,6 +458,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
           productId: product.id,
           product,
           selectedSize: defaultSize,
+          selectedColor: defaultColor,
           quantity,
         },
       ];
@@ -560,10 +565,11 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     couponCode?: string;
     discount?: number;
     notes?: string;
+    skipNavigation?: boolean;
   }): Promise<OrderDetails> => {
     const { subtotal } = getCartTotal();
     const deliveryFee =
-      formData.city === 'Outside Dhaka'
+      formData.city === 'Outside Dhaka' || formData.city === 'ঢাকার বাইরে'
         ? siteSettings.shippingOutsideDhaka || 130
         : siteSettings.shippingInsideDhaka || 80;
     const discount = formData.discount || 0;
@@ -620,9 +626,11 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setActiveOrderConfirmation(newOrder);
     clearCart();
     setIsCartOpen(false);
-    setCurrentView('thank-you');
-    window.history.pushState({}, '', '/thank-you');
-    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    if (!formData.skipNavigation) {
+      setCurrentView('thank-you');
+      window.history.pushState({}, '', '/thank-you');
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    }
     return newOrder;
   };
 

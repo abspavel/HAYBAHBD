@@ -34,6 +34,7 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({ product })
   } = useShop();
 
   const [selectedSize, setSelectedSize] = useState<string>(product.sizes?.[0] || 'L');
+  const [selectedColor, setSelectedColor] = useState<string>(product.colors?.[0] || 'Standard');
   const [quantity, setQuantity] = useState<number>(1);
   const [showSizeGuide, setShowSizeGuide] = useState(false);
   const [activeTab, setActiveTab] = useState<'desc' | 'specs' | 'delivery'>('desc');
@@ -49,6 +50,9 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({ product })
     setActiveImage(product.image || (product.gallery && product.gallery[0]) || '');
     if (product.sizes && product.sizes.length > 0) {
       setSelectedSize(product.sizes[0]);
+    }
+    if (product.colors && product.colors.length > 0) {
+      setSelectedColor(product.colors[0]);
     }
   }, [product]);
 
@@ -87,12 +91,12 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({ product })
   }, [product]);
 
   const handleAddToCart = () => {
-    addToCart(product, selectedSize, quantity);
+    addToCart(product, selectedSize, quantity, selectedColor);
   };
 
-  const handleBuyNow = () => {
+  const handleOrderNow = () => {
     setActiveOrderConfirmation(null);
-    const added = addToCart(product, selectedSize, quantity);
+    const added = addToCart(product, selectedSize, quantity, selectedColor);
     if (added) {
       navigateTo('checkout');
     }
@@ -347,6 +351,31 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({ product })
               )}
             </div>
 
+              {/* Color Selector (if product has colors) */}
+              {product.colors && product.colors.length > 0 && (
+                <div className="mt-4">
+                  <span className="block text-xs font-bold text-gray-700 uppercase mb-2">
+                    Select Color: <strong className="text-[#06201A]">{selectedColor}</strong>
+                  </span>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {product.colors.map((clr) => (
+                      <button
+                        key={clr}
+                        type="button"
+                        onClick={() => setSelectedColor(clr)}
+                        className={`py-1.5 px-3 rounded-lg text-xs font-semibold transition-all ${
+                          selectedColor === clr
+                            ? 'bg-[#06201A] text-[#D4AF37] ring-2 ring-[#D4AF37] shadow-xs'
+                            : 'bg-white border border-gray-200 text-gray-700 hover:border-gray-400'
+                        }`}
+                      >
+                        {clr}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
             {/* Quantity Stepper */}
             <div className="mt-4">
               <span className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
@@ -373,37 +402,26 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({ product })
               </div>
             </div>
 
-            {/* Purchase CTA Buttons */}
-            <div className="mt-6 flex flex-col sm:flex-row gap-3">
+            {/* Purchase CTA: Only ORDER NOW button */}
+            <div className="mt-6">
               {(!product.inStock || (product.stockQuantity !== undefined && product.stockQuantity <= 0)) ? (
                 <button
                   type="button"
                   disabled
-                  className="flex-1 py-3.5 rounded-xl bg-gray-200 text-gray-400 font-extrabold text-xs sm:text-sm uppercase tracking-wider cursor-not-allowed flex items-center justify-center gap-2"
+                  className="w-full py-4 rounded-xl bg-gray-200 text-gray-400 font-extrabold text-xs sm:text-sm uppercase tracking-wider cursor-not-allowed flex items-center justify-center gap-2"
                 >
-                  <ShoppingBag className="w-4 h-4" />
+                  <Package className="w-4 h-4" />
                   <span>OUT OF STOCK</span>
                 </button>
               ) : (
-                <>
-                  <button
-                    type="button"
-                    onClick={handleAddToCart}
-                    className="flex-1 py-3.5 rounded-xl bg-[#D4AF37] hover:bg-[#B8962E] text-[#06201A] font-extrabold text-xs sm:text-sm uppercase tracking-wider shadow-md transition-all flex items-center justify-center gap-2 active:scale-98 cursor-pointer"
-                  >
-                    <ShoppingBag className="w-4 h-4" />
-                    <span>ADD TO CART</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleBuyNow}
-                    className="flex-1 py-3.5 rounded-xl bg-[#06201A] hover:bg-[#0B2B22] text-[#D4AF37] border border-[#D4AF37]/50 font-extrabold text-xs sm:text-sm uppercase tracking-wider shadow-md transition-all flex items-center justify-center gap-2 active:scale-98 cursor-pointer"
-                  >
-                    <Package className="w-4 h-4 text-[#D4AF37]" />
-                    <span>BUY NOW (COD)</span>
-                  </button>
-                </>
+                <button
+                  type="button"
+                  onClick={handleOrderNow}
+                  className="w-full py-4 rounded-xl bg-[#0B2B22] hover:bg-[#06201A] text-[#D4AF37] border border-[#D4AF37]/60 font-black text-sm sm:text-base uppercase tracking-wider shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2.5 active:scale-98 cursor-pointer"
+                >
+                  <Package className="w-5 h-5 text-[#D4AF37]" />
+                  <span>ORDER NOW</span>
+                </button>
               )}
             </div>
 

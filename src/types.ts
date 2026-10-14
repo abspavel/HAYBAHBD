@@ -37,6 +37,7 @@ export interface CartItem {
   productId: string;
   product: Product;
   selectedSize: string;
+  selectedColor?: string;
   quantity: number;
 }
 
