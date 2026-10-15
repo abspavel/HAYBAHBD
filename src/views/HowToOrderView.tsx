@@ -14,8 +14,8 @@ export const HowToOrderView: React.FC = () => {
     },
     {
       num: '02',
-      title: 'Choose Size & Add to Cart',
-      desc: 'Pick your preferred fit (M, L, XL, XXL) from the product details view and click "ADD TO CART" or instant "BUY NOW".',
+      title: 'Choose Size & Order Now',
+      desc: 'Pick your preferred fit (M, L, XL, XXL) from the product details view and click "ORDER NOW" to proceed directly to checkout.',
       tip: 'Our menswear pieces feature a contemporary precision-tailored silhouette.',
     },
     {

@@ -90,10 +90,6 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({ product })
     };
   }, [product]);
 
-  const handleAddToCart = () => {
-    addToCart(product, selectedSize, quantity, selectedColor);
-  };
-
   const handleOrderNow = () => {
     setActiveOrderConfirmation(null);
     const added = addToCart(product, selectedSize, quantity, selectedColor);

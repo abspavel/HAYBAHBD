@@ -1,5 +1,5 @@
 import React from 'react';
-import { Heart, Star, ShoppingBag, Eye } from 'lucide-react';
+import { Heart, Star, ShoppingBag, Eye, Package } from 'lucide-react';
 import { Product } from '../types';
 import { useShop } from '../context/ShopContext';
 
@@ -143,7 +143,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           </div>
         </div>
 
-        {/* Gold ADD TO CART Button or Out of stock disabled button */}
+        {/* ORDER NOW Button or Out of stock disabled button */}
         {(!product.inStock || (product.stockQuantity !== undefined && product.stockQuantity <= 0)) ? (
           <button
             type="button"
@@ -158,11 +158,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             onClick={(e) => {
               e.stopPropagation();
               addToCart(product, product.sizes[0] || 'L', 1);
+              navigateTo('checkout');
             }}
-            className="mt-3 w-full bg-[#D4AF37] hover:bg-[#B8962E] text-[#06201A] font-bold text-[11px] sm:text-xs py-2 sm:py-2.5 px-3 rounded-lg uppercase tracking-wider transition-all duration-200 active:scale-98 flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
+            className="mt-3 w-full bg-[#0B2B22] hover:bg-[#06201A] text-[#D4AF37] border border-[#D4AF37]/50 font-black text-[11px] sm:text-xs md:text-sm py-2 sm:py-2.5 px-3 rounded-lg uppercase tracking-wider transition-all duration-200 active:scale-98 flex items-center justify-center gap-1.5 shadow-sm hover:shadow-md cursor-pointer"
           >
-            <ShoppingBag className="w-3.5 h-3.5" />
-            <span>ADD TO CART</span>
+            <Package className="w-3.5 h-3.5 text-[#D4AF37]" />
+            <span>ORDER NOW</span>
           </button>
         )}
       </div>
