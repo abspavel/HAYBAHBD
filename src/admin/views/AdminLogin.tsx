@@ -80,17 +80,26 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onSuccess }) => {
         }
       }
 
-      // 2. Fallback check for offline/unmigrated Supabase instance
-      const isMasterAdmin =
-        cleanEmail.toLowerCase() === 'haybahclothing1@gmail.com' &&
-        password === 'admin123';
+      // 2. Admin verification via active credentials (Supabase DB synced + local)
+      const {
+        getActiveAdminEmail,
+        verifyAdminCurrentPassword,
+      } = await import('../../services/adminAuthService');
 
-      if (isMasterAdmin) {
-        localStorage.setItem('haybah_admin_authenticated', 'true');
-        sessionStorage.setItem('haybah_admin_session_token', 'valid_' + Date.now());
-        setFailedAttempts(0);
-        onSuccess();
-        return;
+      const activeAdminEmail = await getActiveAdminEmail();
+      const isEmailMatch =
+        cleanEmail.toLowerCase() === activeAdminEmail.toLowerCase() ||
+        cleanEmail.toLowerCase() === 'haybahclothing1@gmail.com';
+
+      if (isEmailMatch) {
+        const isPasswordValid = await verifyAdminCurrentPassword(password, cleanEmail);
+        if (isPasswordValid) {
+          localStorage.setItem('haybah_admin_authenticated', 'true');
+          sessionStorage.setItem('haybah_admin_session_token', 'valid_' + Date.now());
+          setFailedAttempts(0);
+          onSuccess();
+          return;
+        }
       }
 
       // Increment failed attempts for brute-force protection

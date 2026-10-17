@@ -18,6 +18,12 @@ import { SiteSettings } from '../../types';
 import { fetchLiveSiteSettings, adminSaveSiteSettings } from '../../services/supabaseService';
 import { supabase } from '../../lib/supabase';
 
+import {
+  verifyAdminCurrentPassword,
+  updateAdminPassword,
+  getActiveAdminEmail,
+} from '../../services/adminAuthService';
+
 export const SettingsView: React.FC = () => {
   // Site settings state
   const [settings, setSettings] = useState<SiteSettings>({
@@ -43,17 +49,15 @@ export const SettingsView: React.FC = () => {
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [passwordSuccess, setPasswordSuccess] = useState(false);
   const [updatingPassword, setUpdatingPassword] = useState(false);
-  const [adminUserEmail, setAdminUserEmail] = useState('Admin Account');
+  const [adminUserEmail, setAdminUserEmail] = useState('haybahclothing1@gmail.com');
 
   useEffect(() => {
     async function load() {
       const live = await fetchLiveSiteSettings();
       setSettings(live);
 
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user?.email) {
-        setAdminUserEmail(user.email);
-      }
+      const activeEmail = await getActiveAdminEmail();
+      setAdminUserEmail(activeEmail);
     }
     load();
   }, []);
@@ -77,52 +81,39 @@ export const SettingsView: React.FC = () => {
     setPasswordSuccess(false);
 
     if (newPassword.length < 6) {
-      setPasswordError('New password must be at least 6 characters long.');
+      setPasswordError('পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে (New password must be at least 6 characters long).');
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setPasswordError('New password and confirmation do not match.');
+      setPasswordError('নতুন পাসওয়ার্ড এবং কনফার্ম পাসওয়ার্ড মিলছে না (New password and confirmation do not match).');
       return;
     }
 
     setUpdatingPassword(true);
 
     try {
-      // First verify current password by attempting sign in
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (user?.email && currentPassword) {
-        const { error: verifyError } = await supabase.auth.signInWithPassword({
-          email: user.email,
-          password: currentPassword,
-        });
-
-        if (verifyError) {
-          setPasswordError('Current password is not correct.');
-          setUpdatingPassword(false);
-          return;
-        }
+      // 1. Verify current password
+      const isValidCurrent = await verifyAdminCurrentPassword(currentPassword, adminUserEmail);
+      if (!isValidCurrent) {
+        setPasswordError('বর্তমান পাসওয়ার্ডটি সঠিক নয় (Current password is not correct).');
+        setUpdatingPassword(false);
+        return;
       }
 
-      // Update password via Supabase Auth
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: newPassword,
-      });
-
-      if (updateError) {
-        setPasswordError(updateError.message);
+      // 2. Update password across Supabase DB, localStorage, and Auth
+      const res = await updateAdminPassword(newPassword, adminUserEmail);
+      if (!res.success) {
+        setPasswordError(res.error || 'পাসওয়ার্ড আপডেট করতে সমস্যা হয়েছে (Password update failed).');
       } else {
         setPasswordSuccess(true);
         setCurrentPassword('');
         setNewPassword('');
         setConfirmPassword('');
-        setTimeout(() => setPasswordSuccess(false), 4000);
+        setTimeout(() => setPasswordSuccess(false), 5000);
       }
     } catch (err: any) {
-      setPasswordError(err?.message || 'Password update failed.');
+      setPasswordError(err?.message || 'পাসওয়ার্ড আপডেট করতে সমস্যা হয়েছে (Password update failed).');
     } finally {
       setUpdatingPassword(false);
     }
